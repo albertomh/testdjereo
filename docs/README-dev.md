@@ -1,0 +1,73 @@
+# testdjereo developer README
+
+## Git principles
+
+This repo follows trunk-based development. This means:
+
+- the `main` branch should always be in a releasable state
+- use short-lived feature branches
+
+## Justfile recipes
+
+### The runserver recipe
+
+The `runserver` just recipe is the main command to call when developing testdjereo.
+It installs dependencies and the application (in editable mode) in a virtual environment,
+then invokes Django's `runserver` using Python in [Development Mode](https://docs.python.org/3/library/devmode.html).
+Python's Dev Mode will show warnings (Deprecation, Import, Resource) that are otherwise hidden.
+
+### Use project metadata in the running application
+
+`testdjereo/__init__.py` exposes project metadata such as version and author information.
+To use it in a view:
+
+```python
+from django.http import HttpResponse
+
+from testdjereo import __version__
+
+
+def view(request):
+    return HttpResponse(f"testdjereo v{__version__}")
+```
+
+### Use IPython as your shell
+
+`IPython`, an improved Python shell, is installed as a development dependency. Django picks
+it up by default and uses it instead of the default Python shell.
+To use `IPython` run `manage.py shell` or the `just shell` recipe.
+
+By default IPython's debugger (`ipdb`) will launch when a `breakpoint()` is reached while
+running the application.
+`ipdb` is also used to debug tests and will launch when a test fails.
+
+## Developer tools
+
+The project comes with some ready-to-use developer tools installed as dev dependencies and
+configured for use locally:
+
+- [django-browser-reload](https://pypi.org/project/django-browser-reload/): reload the browser
+  when project files change.
+- [django-debug-toolbar](https://pypi.org/project/django-debug-toolbar/): display information
+  about the request/response cycle on each page.
+- [rich](https://pypi.org/project/rich/): nicer formatting and colours for `runserver` logs.
+
+## Checks and git hooks
+
+`ruff` is configured as a pre-commit git hook to lint and format your code. Check the
+`tool.ruff.lint` table in `pyproject.toml` for a full list of rules and options.
+Notable rules include:
+
+- [banned-api](https://docs.astral.sh/ruff/rules/banned-api/) from the `flake8-tidy-imports`
+linter. Configured to ban importing the project settings module directly, preferring to use
+`django.conf.settings`. This is to improve consistency, particulary when overriding
+settings in tests.
+
+## Upgrade checklist
+
+- [ ] Bump the version of Django specified in the config for the `django-upgrade` hook in
+      `.pre-commit-config.yaml`.
+
+---
+
+&copy; Alberto Morón Hernández

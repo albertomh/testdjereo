@@ -1,0 +1,29 @@
+# testdjereo - local development tooling
+
+set positional-arguments
+
+default:
+  @just --list
+
+_dev_setup:
+  @uv venv
+  @uv sync --dev
+  @uv pip install -e .
+
+manage +args='help': _dev_setup
+  @uv run manage.py "$@"
+
+runserver $PYTHONDEVMODE="1": _dev_setup
+  @uv run manage.py runserver
+
+shell: _dev_setup
+  @uv run manage.py shell
+
+test +args='tests':
+  @uv venv
+  @uv sync --group test
+  @uv pip install -e .
+  @uv run coverage erase
+  @uv run python -m coverage run --source="." manage.py test "$@" --verbosity=3 --failfast --pdb
+  @uv run coverage report
+  @uv run coverage html
