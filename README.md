@@ -155,4 +155,6 @@ The developer README ([docs/README-dev.md](docs/README-dev.md)) covers how to wo
 
 ---
 
+Trivial change to test GH Actions.
+
 &copy; Alberto Morón Hernández
