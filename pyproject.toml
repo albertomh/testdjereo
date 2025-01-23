@@ -15,7 +15,7 @@ dependencies = [
     "django>=5.1,<6.0",
     "django-linear-migrations>=2.16.0,<3.0.0",
     "environs[django]>=14.1.0,<15.0.0",
-    "structlog>=24.4.0,<25.0.0",
+    "structlog>=24.4.0,<26.0.0",
 ]
 
 [dependency-groups]
