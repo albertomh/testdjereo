@@ -29,6 +29,7 @@ else:  # pragma: no cover
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+USE_SQLITE = env.bool("USE_SQLITE", default=False)
 
 # 1. Django Core Settings ----------------------------------------------------------------
 
@@ -142,7 +143,15 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {"default": env.dj_db_url("DATABASE_URL")}
+if USE_SQLITE:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+else:
+    DATABASES = {"default": env.dj_db_url("DATABASE_URL")}
 
 
 AUTH_USER_MODEL = "users.AuthUser"
