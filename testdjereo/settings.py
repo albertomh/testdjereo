@@ -150,7 +150,7 @@ if USE_SQLITE:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
-else:
+else:  # pragma: no cover
     DATABASES = {"default": env.dj_db_url("DATABASE_URL")}
 
 
