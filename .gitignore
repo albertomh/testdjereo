@@ -107,3 +107,9 @@ ENV/
 .idea/
 
 .ruff_cache/
+
+testdjereo-do-pat
+testdjereo-ghrc-pat
+testdjereo-**-pat
+
+*.tar.gz

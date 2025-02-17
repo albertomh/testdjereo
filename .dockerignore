@@ -1,2 +1,10 @@
-# Exclude the project virtual environment from image builds
+.coverage
 .venv
+.editorconfig
+.github/
+.markdownlint-cli2.yaml
+.pre-commit-config.yaml
+.release-please-manifest.*
+.ruff_cache
+htmlcov
+testdjereo/static/
