@@ -7,5 +7,4 @@
 .release-please-manifest.*
 .ruff_cache
 htmlcov
-testdjereo/static/
 *tar.gz

@@ -150,7 +150,18 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {"default": env.dj_db_url("DATABASE_URL")}
+USE_SQLITE = env.bool("USE_SQLITE", default=False)
+
+DATABASES = (
+    {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": str(BASE_DIR / "db.sqlite3"),
+        }
+    }
+    if USE_SQLITE
+    else {"default": env.dj_db_url("DATABASE_URL")}
+)
 
 
 AUTH_USER_MODEL = "users.AuthUser"
@@ -208,6 +219,10 @@ STORAGES = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    }
+    if IS_TESTING
+    else {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
