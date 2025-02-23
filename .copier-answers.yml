@@ -1,0 +1,11 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v0.16.0-10-gd4de715
+_src_path: djereo
+author_email: alberto.moronh@gmail.com
+author_name: Alberto Morón Hernández
+django_version: '5.1'
+initial_version: 0.1.0
+is_github_project: true
+postgres_version: '17'
+project_name: testdjereo
+python_version: '3.12'
