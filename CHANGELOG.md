@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.0](https://github.com/albertomh/testdjereo/compare/v0.1.0...v0.2.0) (2025-02-27)
+
+
+### Features
+
+* Add sqlite as alt. db for MVP deployment ([a732626](https://github.com/albertomh/testdjereo/commit/a732626dff856f50215b5f61fea5339b7511c391))
+
+## Changelog
+
 Notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
