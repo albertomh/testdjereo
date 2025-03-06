@@ -1,5 +1,7 @@
 {% extends "_base.html" %}
 
+{% load waffle_tags %}
+
 {% block head_title %}Home{% endblock %}
 
 {% block content_root %}<section>
@@ -8,9 +10,13 @@
         <p>A Django web application generated <br>using the 🐴 djereo project template.</p>
         <br>
         <p>
+        {% switch "is_footer_visible" %}
             <a href="https://albertomh.github.io/djereo/" target="_blank">
                 <strong>📖 djereo docs</strong>
             </a>
+        {% else %}
+            <p>Nothing to see here 😗</p>
+        {% endswitch %}
             <a href="https://github.com/albertomh/djereo" target="_blank">
                 <em>🐙 Repository</em>
             </a>
