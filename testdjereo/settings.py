@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import logging
 import sys
 from pathlib import Path
 from typing import Any
@@ -74,6 +75,7 @@ THIRD_PARTY_APPS = [
     "django_linear_migrations",
     "django_structlog",
     "django_version_checks",
+    "waffle",
     "whitenoise.runserver_nostatic",
 ]
 CONTRIB_APPS = [
@@ -99,6 +101,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "waffle.middleware.WaffleMiddleware",
     "allauth.account.middleware.AccountMiddleware",
 ]
 if not DEBUG:
@@ -305,5 +308,10 @@ ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE = False
 ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_LOGIN_METHODS = {"email"}
 
+# django-waffle
+
+WAFFLE_LOG_MISSING_FLAGS = logging.WARNING
+WAFFLE_LOG_MISSING_SWITCHES = logging.WARNING
+WAFFLE_LOG_MISSING_SAMPLES = logging.WARNING
 
 # 4. Project Settings --------------------------------------------------------------------

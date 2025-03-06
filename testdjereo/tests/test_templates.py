@@ -1,10 +1,10 @@
 import ast
 
 from bs4 import BeautifulSoup
-from django.test import Client, SimpleTestCase
+from django.test import Client, SimpleTestCase, TestCase
 
 
-class HtmxTest(SimpleTestCase):
+class HtmxTest(TestCase):
     def setUp(self):
         self.client = Client()
 
