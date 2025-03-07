@@ -1,17 +1,14 @@
-# Continuous Integration pipeline
-# Runs when a Pull Request is merged into the 'main' branch.
-name: CI
+# On Tag pipeline
+# Runs when a tag is pushed up to GitHub.
+name: on-tag
 
 on:
-  pull_request:
-    types:
-      - closed
-    branches:
-      - main
+  push:
+    tags:
+      - '*'
 
 jobs:
   pre_commit:
-    if: ${{ github.event.pull_request.merged }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -44,12 +41,10 @@ jobs:
       # env. vars because GITHUB_ vars not available in containerise's 'tag' input var
       - run: |
           echo "REPO_NAME=${GITHUB_REPOSITORY@L}" >> $GITHUB_ENV
-          echo "REF_NAME=${GITHUB_REF_NAME}" >> $GITHUB_ENV
       - uses: ./.github/actions/containerise
         with:
           dockerfile: _deploy/deploy.Dockerfile
           username: ${{ github.actor }}
           password: ${{ github.token }}
           tags:
-            ${{ env.REPO_NAME }}:${{ github.ref_name }},
-            ${{ env.REPO_NAME }}:latest,
+            ${{ env.REPO_NAME }}:${{ github.ref_name }}
