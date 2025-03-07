@@ -45,28 +45,3 @@ jobs:
         with:
           file_pattern: 'uv.lock'
           commit_message: 'chore: update uv.lock with new version from release-please'
-
-  containerise:
-    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
-    needs:
-      - release-please
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - run: |
-          LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
-          # TODO: remove and instead pass as step output to `git_ref` input of `containerise` step
-          git checkout $LATEST_TAG
-      # env. vars because GITHUB_ vars not available in containerise's 'tag' input var
-      - run: |
-          echo "REPO_NAME=${GITHUB_REPOSITORY@L}" >> $GITHUB_ENV
-          echo "REF_NAME=${GITHUB_REF_NAME}" >> $GITHUB_ENV
-      - uses: ./.github/actions/containerise
-        with:
-          dockerfile: _deploy/deploy.Dockerfile
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-          tag: ${{ env.REPO_NAME }}:${{ env.REF_NAME }},
-            ${{ env.REPO_NAME }}:latest,
