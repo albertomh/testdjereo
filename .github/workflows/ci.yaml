@@ -34,3 +34,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/test
+
+  containerise:
+    needs:
+      - test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      # env. vars because GITHUB_ vars not available in containerise's 'tag' input var
+      - run: |
+          echo "REPO_NAME=${GITHUB_REPOSITORY@L}" >> $GITHUB_ENV
+          echo "REF_NAME=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+      - uses: ./.github/actions/containerise
+        with:
+          dockerfile: _deploy/deploy.Dockerfile
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+          tag: ${{ env.REPO_NAME }}/${{ env.REF_NAME }}:latest
