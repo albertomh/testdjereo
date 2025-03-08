@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/albertomh/testdjereo/compare/v0.3.1...v0.4.0) (2025-03-08)
+
+
+### Features
+
+* Test feat for CI container namespacing ([#30](https://github.com/albertomh/testdjereo/issues/30)) ([490e9a6](https://github.com/albertomh/testdjereo/commit/490e9a6b2b9bb6d336e4705ba3a96b7ea7875ac1))
+
 ## [0.3.1](https://github.com/albertomh/testdjereo/compare/v0.3.0...v0.3.1) (2025-03-08)
 
 
