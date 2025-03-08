@@ -36,6 +36,7 @@ jobs:
       - uses: ./.github/actions/test
 
   containerise:
+    if: github.head_ref != 'release-please--branches--main'
     needs:
       - test
     runs-on: ubuntu-24.04
