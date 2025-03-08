@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/albertomh/testdjereo/compare/v0.3.0...v0.3.1) (2025-03-08)
+
+
+### Bug Fixes
+
+* Test fix for checking CI containerisation ([#28](https://github.com/albertomh/testdjereo/issues/28)) ([d3d215e](https://github.com/albertomh/testdjereo/commit/d3d215e4e50cce6c43cc42f3d89ae285064e9eb7))
+
 ## [0.3.0](https://github.com/albertomh/testdjereo/compare/v0.2.0...v0.3.0) (2025-03-08)
 
 
