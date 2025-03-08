@@ -315,3 +315,5 @@ WAFFLE_LOG_MISSING_SWITCHES = logging.WARNING
 WAFFLE_LOG_MISSING_SAMPLES = logging.WARNING
 
 # 4. Project Settings --------------------------------------------------------------------
+
+FOO = "bar"
