@@ -51,5 +51,5 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
           tags:
-            ghcr.io/${{ env.REPO_NAME }}:latest,
-            ghcr.io/${{ env.REPO_NAME }}:${{ env.SHA_SHORT }},
+            ghcr.io/${{ env.REPO_NAME }}/${{ github.ref_name }}:latest,
+            ghcr.io/${{ env.REPO_NAME }}/${{ github.ref_name }}:${{ env.SHA_SHORT }},
