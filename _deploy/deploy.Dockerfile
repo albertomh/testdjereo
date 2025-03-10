@@ -53,4 +53,4 @@ RUN rm .env
 # Reset the entrypoint, avoid base image's call to `uv`.
 ENTRYPOINT []
 
-CMD ["gunicorn", "--bind", "0.0.0.0:$PORT", "testdjereo.wsgi:application"]
+CMD gunicorn --bind 0.0.0.0:$PORT testdjereo.wsgi:application
