@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/albertomh/testdjereo/compare/v0.3.1...v0.3.2) (2025-03-11)
+
+
+### Bug Fixes
+
+* **ci:** Ensure aliveness checks are receiving SERVICE_URL env var ([#43](https://github.com/albertomh/testdjereo/issues/43)) ([bbdafeb](https://github.com/albertomh/testdjereo/commit/bbdafeb2bc5788d39840cd911d4979eec9667544))
+
 ## [0.3.1](https://github.com/albertomh/testdjereo/compare/v0.3.0...v0.3.1) (2025-03-11)
 
 
