@@ -78,6 +78,8 @@ jobs:
   #   - GH secrets (<https://github.com/albertomh/testdjereo/settings/secrets/actions>):
   #     - `SERVICE_URL`: URL for the web service (WITHOUT trailing slash!)
     runs-on: ubuntu-24.04
+    needs:
+      - deploy_latest_tag
     steps:
       - name: Check service aliveness
         id: alive_check
