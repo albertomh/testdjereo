@@ -1,5 +1,11 @@
 # On Tag pipeline
 # Runs when a tag is pushed up to GitHub.
+#
+# Prerequisites:
+#   - GH secrets (<https://github.com/albertomh/testdjereo/settings/secrets/actions>):
+#     - `DO_VPS_IP`: IPv4 address of the Digital Ocean Droplet (VPS)
+#     - `TESTDJEREO_BOT_PUBKEY`: public key for 'testdjereo_bot', `.ssh/testdjereo_bot_ed25519.pub`
+#     - `SERVICE_URL`: URL for the web service (WITHOUT trailing slash!)
 name: on-tag
 
 on:
@@ -48,3 +54,55 @@ jobs:
           tags:
             ghcr.io/${{ env.REPO_NAME }}:latest,
             ghcr.io/${{ env.REPO_NAME }}:${{ github.ref_name }},
+
+  deploy_latest_tag:
+  # Prerequisites:
+  #   - GH secrets (<https://github.com/albertomh/testdjereo/settings/secrets/actions>):
+  #     - `DO_VPS_IP`: IPv4 address of the Digital Ocean Droplet (VPS)
+  #     - `TESTDJEREO_BOT_PUBKEY`: public key for 'testdjereo_bot', `.ssh/testdjereo_bot_ed25519.pub`
+    needs:
+      - containerise
+    runs-on: ubuntu-24.04
+    steps:
+        - shell: bash
+          env:
+            DO_VPS_IP: ${{ secrets.DO_VPS_IP }}
+            TESTDJEREO_BOT_PUBKEY: ${{ secrets.TESTDJEREO_BOT_PUBKEY }}
+          run: |
+            ssh "testdjereo_bot@$DO_VPS_IP" \
+              -i <(echo "$TESTDJEREO_BOT_PUBKEY") \
+              '/etc/testdjereo/blue_green_deployment'
+
+  check_service_health:
+  # Prerequisites:
+  #   - GH secrets (<https://github.com/albertomh/testdjereo/settings/secrets/actions>):
+  #     - `SERVICE_URL`: URL for the web service (WITHOUT trailing slash!)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check service aliveness
+        id: alive_check
+        run: |
+          response=$(wget --quiet --server-response -O - $SERVICE_URL/-/alive/ 2>&1)
+          status_code=$(echo "$response" | grep -o "HTTP/[0-9.]* [0-9]*" | awk '{print $2}')
+          if [[ "$status_code" == "200" ]]; then
+              echo "🆗 /-/alive/ endpoint status: HTTP $status_code"
+          else
+              echo "🔴 Alive endpoint returned non-200 status: $status_code"
+              exit 1
+          fi
+          echo "✅ Service is alive"
+
+      - name: Check service health
+        id: health_check
+        run: |
+          response=$(curl -s -w "\n%{http_code}" "$SERVICE_URL/-/health/")
+          status_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n -1)
+
+          if [[ "$status_code" != "200" ]]; then
+              echo "🔴 /-/health/ endpoint status: HTTP $status_code"
+              echo "🔴 Response body:"
+              jq <<< '$body'
+              exit 1
+          fi
+          echo "✅ Service is healthy"
