@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/albertomh/testdjereo/compare/v0.3.0...v0.3.1) (2025-03-11)
+
+
+### Bug Fixes
+
+* **ci:** Ensure on_tag CI workflow can deploy to VPS ([#41](https://github.com/albertomh/testdjereo/issues/41)) ([1450622](https://github.com/albertomh/testdjereo/commit/1450622802a0b704d5f7ff845c2ac76837016056))
+
 ## [0.3.0](https://github.com/albertomh/testdjereo/compare/v0.2.0...v0.3.0) (2025-03-10)
 
 
