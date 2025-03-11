@@ -67,10 +67,12 @@ jobs:
         - shell: bash
           env:
             DO_VPS_IP: ${{ secrets.DO_VPS_IP }}
-            TESTDJEREO_BOT_PUBKEY: ${{ secrets.TESTDJEREO_BOT_PUBKEY }}
+            TESTDJEREO_BOT_PRIVATE_KEY: ${{ secrets.TESTDJEREO_BOT_PRIVATE_KEY }}
           run: |
-            ssh "testdjereo_bot@$DO_VPS_IP" \
-              -i <(echo "$TESTDJEREO_BOT_PUBKEY") \
+              mkdir -p ~/.ssh
+              echo "$TESTDJEREO_BOT_PRIVATE_KEY" > ~/.ssh/id_ed25519
+              chmod 600 ~/.ssh/id_ed25519
+              ssh -o StrictHostKeyChecking=no "testdjereo_bot@$DO_VPS_IP" \
               '/etc/testdjereo/blue_green_deployment'
 
   check_service_health:
