@@ -89,7 +89,7 @@ jobs:
         env:
           SERVICE_URL: ${{ secrets.SERVICE_URL }}
         run: |
-          response=$(wget --quiet --server-response -O - $SERVICE_URL/-/alive/ 2>&1)
+          response=$(wget --quiet --server-response --no-check-certificate -O - $SERVICE_URL/-/alive/ 2>&1)
           status_code=$(echo "$response" | grep -o "HTTP/[0-9.]* [0-9]*" | awk '{print $2}')
           if [[ "$status_code" == "200" ]]; then
               echo "🆗 /-/alive/ endpoint status: HTTP $status_code"
@@ -105,9 +105,9 @@ jobs:
         env:
           SERVICE_URL: ${{ secrets.SERVICE_URL }}
         run: |
-          response=$(curl -s -w "\n%{http_code}" "$SERVICE_URL/-/health/")
-          status_code=$(echo "$response" | tail -n1)
-          body=$(echo "$response" | head -n -1)
+          response=$(wget --quiet --server-response --no-check-certificate -O - "$SERVICE_URL/-/health/" 2>&1)
+          status_code=$(echo "$response" | grep -o "HTTP/[0-9.]* [0-9]*" | awk '{print $2}')
+          body=$(echo "$response" | sed -n '/^\r$/,$p' | tail -n +2)
 
           if [[ "$status_code" != "200" ]]; then
               echo "🔴 /-/health/ endpoint status: HTTP $status_code"
