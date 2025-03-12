@@ -1,17 +1,18 @@
 # On Tag pipeline
-# Runs when a tag is pushed up to GitHub.
+# Runs when a semver tag is pushed up to GitHub.
 #
 # Prerequisites:
 #   - GH secrets (<https://github.com/albertomh/testdjereo/settings/secrets/actions>):
 #     - `DO_VPS_IP`: IPv4 address of the Digital Ocean Droplet (VPS)
-#     - `TESTDJEREO_BOT_PUBKEY`: public key for 'testdjereo_bot', `.ssh/testdjereo_bot_ed25519.pub`
+#     - `TESTDJEREO_BOT_PRIVATE_KEY`: private key for 'testdjereo_bot', `.ssh/testdjereo_bot_ed25519`
 #     - `SERVICE_URL`: URL for the web service (WITHOUT trailing slash!)
 name: on-tag
 
 on:
   push:
+    # run this workflow only if the tag matches the format 'v<semver>'
     tags:
-      - '*'
+      - 'v*.*.*'
 
 jobs:
   pre_commit:
@@ -59,7 +60,7 @@ jobs:
   # Prerequisites:
   #   - GH secrets (<https://github.com/albertomh/testdjereo/settings/secrets/actions>):
   #     - `DO_VPS_IP`: IPv4 address of the Digital Ocean Droplet (VPS)
-  #     - `TESTDJEREO_BOT_PUBKEY`: public key for 'testdjereo_bot', `.ssh/testdjereo_bot_ed25519.pub`
+  #     - `TESTDJEREO_BOT_PRIVATE_KEY`: private key for 'testdjereo_bot', `.ssh/testdjereo_bot_ed25519`
     needs:
       - containerise
     runs-on: ubuntu-24.04
@@ -79,9 +80,9 @@ jobs:
   # Prerequisites:
   #   - GH secrets (<https://github.com/albertomh/testdjereo/settings/secrets/actions>):
   #     - `SERVICE_URL`: URL for the web service (WITHOUT trailing slash!)
-    runs-on: ubuntu-24.04
     needs:
       - deploy_latest_tag
+    runs-on: ubuntu-24.04
     steps:
       - name: Check service aliveness
         id: alive_check
