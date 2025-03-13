@@ -41,7 +41,7 @@ jobs:
 
   django_checks:
     needs:
-      - test
+      - pre_commit
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -51,6 +51,7 @@ jobs:
 
   containerise:
     needs:
+      - test
       - django_checks
     runs-on: ubuntu-24.04
     steps:
