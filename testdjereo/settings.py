@@ -272,6 +272,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 TEST_RUNNER = "testdjereo.test.TestRunner"
 
+SILENCED_SYSTEM_CHECKS = [
+    # nginx handles SSL termination so `SECURE_SSL_REDIRECT` is not configured
+    "security.W008",  # SECURE_SSL_REDIRECT not set to True
+]
+
 # 2. Django Contrib Settings -------------------------------------------------------------
 
 
