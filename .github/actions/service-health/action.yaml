@@ -4,6 +4,8 @@
 #   ```
 #   steps:
 #     - uses: ./.github/actions/service-health
+#       with:
+#         service_url: ${{ secrets.SERVICE_URL }}
 #   ```
 #
 # Prerequisites:
@@ -13,36 +15,43 @@
 name: 'service-health'
 description: 'Check health of deployed service'
 
+inputs:
+  service_url:
+    description: 'URL for the web service (without trailing slash)'
+    required: true
+
 runs:
   using: 'composite'
   steps:
-    - name: Check service aliveness
+    - name: Check service liveness
       id: alive_check
       shell: bash
       env:
-        SERVICE_URL: ${{ secrets.SERVICE_URL }}
+        SERVICE_URL: ${{ inputs.service_url }}
       run: |
         response=$(wget --quiet --server-response --no-check-certificate -O - $SERVICE_URL/-/alive/ 2>&1)
         status_code=$(echo "$response" | grep -o "HTTP/[0-9.]* [0-9]*" | awk '{print $2}')
-        if [[ "$status_code" != "200" ]]; then
-            echo "🔴 Alive endpoint returned non-200 status: $status_code"
+        if [[ "$status_code" == "200" ]]; then
+            echo "✅ Service is alive"
+        else
+            echo "🔴 /-/alive/ endpoint returned status 'HTTP $status_code'"
             exit 1
         fi
-        echo "✅ Service is alive"
 
     - name: Check service health
       id: health_check
       shell: bash
       env:
-        SERVICE_URL: ${{ secrets.SERVICE_URL }}
+        SERVICE_URL: ${{ inputs.service_url }}
       run: |
         response=$(wget --quiet --server-response --no-check-certificate -O - "$SERVICE_URL/-/health/" 2>&1)
         status_code=$(echo "$response" | grep -o "HTTP/[0-9.]* [0-9]*" | awk '{print $2}')
         body=$(echo "$response" | sed -n '/^\r$/,$p' | tail -n +2)
-        if [[ "$status_code" != "200" ]]; then
-            echo "🔴 /-/health/ endpoint status: HTTP $status_code"
+        if [[ "$status_code" == "200" ]]; then
+            echo "✅ Service is healthy"
+        else
+            echo "🔴 /-/health/ endpoint returned status 'HTTP $status_code'"
             echo "🔴 Response body:"
             jq <<< '$body'
             exit 1
         fi
-        echo "✅ Service is healthy"
