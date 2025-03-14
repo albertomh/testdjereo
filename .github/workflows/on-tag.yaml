@@ -95,36 +95,5 @@ jobs:
       - deploy_latest_tag
     runs-on: ubuntu-24.04
     steps:
-      - name: Check service aliveness
-        id: alive_check
-        shell: bash
-        env:
-          SERVICE_URL: ${{ secrets.SERVICE_URL }}
-        run: |
-          response=$(wget --quiet --server-response --no-check-certificate -O - $SERVICE_URL/-/alive/ 2>&1)
-          status_code=$(echo "$response" | grep -o "HTTP/[0-9.]* [0-9]*" | awk '{print $2}')
-          if [[ "$status_code" == "200" ]]; then
-              echo "🆗 /-/alive/ endpoint status: HTTP $status_code"
-          else
-              echo "🔴 Alive endpoint returned non-200 status: $status_code"
-              exit 1
-          fi
-          echo "✅ Service is alive"
-
-      - name: Check service health
-        id: health_check
-        shell: bash
-        env:
-          SERVICE_URL: ${{ secrets.SERVICE_URL }}
-        run: |
-          response=$(wget --quiet --server-response --no-check-certificate -O - "$SERVICE_URL/-/health/" 2>&1)
-          status_code=$(echo "$response" | grep -o "HTTP/[0-9.]* [0-9]*" | awk '{print $2}')
-          body=$(echo "$response" | sed -n '/^\r$/,$p' | tail -n +2)
-
-          if [[ "$status_code" != "200" ]]; then
-              echo "🔴 /-/health/ endpoint status: HTTP $status_code"
-              echo "🔴 Response body:"
-              jq <<< '$body'
-              exit 1
-          fi
-          echo "✅ Service is healthy"
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/service-health
