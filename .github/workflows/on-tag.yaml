@@ -67,7 +67,7 @@ jobs:
             ghcr.io/${{ env.REPO_NAME }}:latest,
             ghcr.io/${{ env.REPO_NAME }}:${{ github.ref_name }},
 
-  deploy_latest_tag:
+  deploy_tag:
   # Prerequisites:
   #   - GH secrets (<https://github.com/albertomh/testdjereo/settings/secrets/actions>):
   #     - `DO_VPS_IP`: IPv4 address of the Digital Ocean Droplet (VPS)
@@ -78,6 +78,7 @@ jobs:
     steps:
       - shell: bash
         env:
+          TESTDJEREO_TAG: ${{ github.ref_name }}
           DO_VPS_IP: ${{ secrets.DO_VPS_IP }}
           TESTDJEREO_BOT_PRIVATE_KEY: ${{ secrets.TESTDJEREO_BOT_PRIVATE_KEY }}
         run: |
@@ -85,14 +86,14 @@ jobs:
             echo "$TESTDJEREO_BOT_PRIVATE_KEY" > ~/.ssh/id_ed25519
             chmod 600 ~/.ssh/id_ed25519
             ssh -o StrictHostKeyChecking=no "testdjereo_bot@$DO_VPS_IP" \
-            '/etc/testdjereo/blue_green_deployment'
+            "/etc/testdjereo/blue_green_deployment '$TESTDJEREO_TAG'"
 
   check_service_health:
   # Prerequisites:
   #   - GH secrets (<https://github.com/albertomh/testdjereo/settings/secrets/actions>):
   #     - `SERVICE_URL`: URL for the web service (WITHOUT trailing slash!)
     needs:
-      - deploy_latest_tag
+      - deploy_tag
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
