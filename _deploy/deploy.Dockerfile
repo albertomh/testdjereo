@@ -53,4 +53,7 @@ RUN rm .env
 # Reset the entrypoint, avoid base image's call to `uv`.
 ENTRYPOINT []
 
-CMD gunicorn --bind 0.0.0.0:$PORT testdjereo.wsgi:application
+# `sh -c` allows variable expansion ($PORT) while allowing for the benefits of 'exec form'
+# (CMD [...]) over 'shell form' (CMD ...). Benefits include preserving signal handling and
+# improved container shutdown behavior.
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:$PORT testdjereo.wsgi:application"]

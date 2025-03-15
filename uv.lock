@@ -701,7 +701,7 @@ wheels = [
 
 [[package]]
 name = "testdjereo"
-version = "9.9.9"
+version = "9.9.10"
 source = { virtual = "." }
 dependencies = [
     { name = "django" },
