@@ -47,10 +47,16 @@ mode).
   i.e. `just runserver ""`
 - `shell`: run Django's management command to drop into a shell. By default this is IPython
   in all new projects.
-- `test`: install test dependencies, run all unit tests via Django's test runner and
-  generate and display a coverage report (both on-screen and in HTML format).
 - `profile_tests`: uses py-spy to profile a test run and outputs results in speedscope format.
   N.B. this requires `py-spy` to be available globally on your system.
+
+## Running tests
+
+Invoke `nox` to run tests across various Python versions. You can select a single session ie.
+
+```sh
+nox --session tests_with_coverage-3.13
+```
 
 ## Use IPython as your shell
 

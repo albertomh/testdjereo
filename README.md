@@ -23,6 +23,7 @@ To use `testdjereo` the following must be available locally:
 - [Postgres](https://www.postgresql.org/download/)
 - [uv](https://docs.astral.sh/uv/)
 - [just](https://github.com/casey/just)
+- [nox](https://nox.thea.codes/en/stable/)
 
 ## Quickstart: run locally
 
