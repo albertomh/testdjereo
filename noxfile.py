@@ -11,6 +11,7 @@ nox.options.default_venv_backend = "uv"
 run_tests_args = ["manage.py", "test"]
 run_tests_flags = ["--failfast", "--pdb", "--shuffle", "--verbosity=3"]
 
+
 def _install_deps(session: nox.Session) -> None:
     session.run_install(
         "uv",
@@ -44,7 +45,8 @@ def tests_with_coverage(session: nox.Session) -> None:
     session.run(
         "coverage",
         "run",
-        "--source", ".",
+        "--source",
+        ".",
         *run_tests_args,
         *session.posargs,
         *run_tests_flags,
