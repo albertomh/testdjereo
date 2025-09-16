@@ -92,7 +92,11 @@ select = [
 
 [tool.coverage.report]
 omit = [
-  "*/tests/*"
+    "*/__init__.py",
+    "*/migrations/*",
+    "noxfile.py",
+    "*/tests/*",
+    "*/tests_e2e/*",
 ]
 exclude_lines = [
     "pragma: no cover",
@@ -103,12 +107,12 @@ exclude_lines = [
 
 [tool.coverage.run]
 source = [
-  "./testdjereo/",
+    "./testdjereo/",
 ]
 omit = [
-  "manage.py",
-  "*/tests/*",
-  "testdjereo/asgi.py",
-  "testdjereo/wsgi.py",
-  "testdjereo/settings.py",
+    "manage.py",
+    "*/tests/*",
+    "testdjereo/asgi.py",
+    "testdjereo/wsgi.py",
+    "testdjereo/settings.py",
 ]
