@@ -35,13 +35,6 @@ def _effective_flags(session: nox.Session) -> list[str]:
     posargs = [*session.posargs]
     conditional_flags = []
 
-    if "--create-db" in posargs:
-        posargs = [p for p in posargs if p != "--create-db"]
-        # needed to force re-creating old databases left over from runs with `keepdb`
-        conditional_flags.append("--no-input")
-    else:
-        conditional_flags.append("--keepdb")
-
     test_processes = 2
     if "--pdb" in posargs:
         test_processes = 1
