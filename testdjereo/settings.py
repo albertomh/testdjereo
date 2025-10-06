@@ -84,6 +84,7 @@ CONTRIB_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
+    "django.contrib.sites",
     "django.contrib.messages",
     "django.contrib.staticfiles",
 ]
@@ -192,8 +193,8 @@ PERMISSIONS_POLICY: dict[str, list] = {
 
 SITE_ID = 1
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_PORT = 1025
 
 # Database
 # https://docs.djangoproject.com/en/stable/ref/settings/#databases
@@ -329,6 +330,7 @@ if ENABLE_DEBUG_TOOLS:
 
 # django-allauth
 
+ACCOUNT_ADAPTER = "users.django_allauth.adapter.CustomAccountAdapter"
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*"]
 ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_LOGIN_METHODS = {"email"}
