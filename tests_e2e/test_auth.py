@@ -28,8 +28,8 @@ class TestSignUp(AuthTest):
 
         email = f"{''.join(random.choices(string.ascii_lowercase, k=6))}@example.com"
         page.fill("#id_email", email)
-        password = "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
-        page.fill("#id_password1", password)
+        password = "".join(random.choices(string.ascii_lowercase + string.digits, k=16))
+        page.fill("#id_password1", f"Aa1!strong{password}")
         page.click("button[type=submit]")
 
         expect(page).to_have_url(f"{BASE_URL}/")
