@@ -23,6 +23,7 @@ To use `testdjereo` the following must be available locally:
 - [Postgres](https://www.postgresql.org/download/)
 - [uv](https://docs.astral.sh/uv/)
 - [just](https://github.com/casey/just)
+- [Mailpit](https://mailpit.axllent.org/)
 - [nox](https://nox.thea.codes/en/stable/)
 
 ## Quickstart: run locally
@@ -45,6 +46,9 @@ just manage seed_database
 # 5/5 install dependencies in a virtual environment and run the Django development server
 just runserver
 ```
+
+You can now access the application on <http://127.0.0.1:8000> and the local SMTP server on
+<http://127.0.0.1:8025>.
 
 IPython is available as the default shell. Start an interactive session with:
 
