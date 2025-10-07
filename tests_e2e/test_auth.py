@@ -1,7 +1,6 @@
 import random
 import string
 
-import pytest
 import requests
 from playwright.sync_api import expect
 
@@ -39,10 +38,11 @@ class TestSignUp(AuthTest):
         msg: MailPitMessage = mp_res["messages"][0]
         assert msg["To"][0]["Address"] == email
         snippet = (
-            f"Hello from example.com! You're receiving this email because user "
-            f"{email.split('@')[0]} has given your email address to register"
+            f"You're receiving this email because user {email.split('@')[0]} has given "
+            "your email address to register"
         )
         assert snippet in msg["Snippet"]
+
 
 class TestLogInPage(AuthTest):
     def test_log_in_as_a_regular_user(self, page):
