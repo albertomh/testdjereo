@@ -74,8 +74,8 @@ jobs:
       postgres:
         image: postgres:17
         env:
-          POSTGRES_DB: testdjereo
-          POSTGRES_USER: testdjereo
+          POSTGRES_DB: test_testdjereo
+          POSTGRES_USER: test_testdjereo
           POSTGRES_PASSWORD: password
         ports:
           - 5432:5432
