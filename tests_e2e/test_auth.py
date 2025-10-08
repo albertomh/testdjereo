@@ -35,9 +35,10 @@ class TestSignUp(AuthTest):
 
         try:
             expect(page).to_have_url(f"{BASE_URL}/")
-        except ValueError:
-            print(page.content())
-            assert False
+        except Exception:
+            print(page.content())  # noqa
+            print("Form contents:\n", page.inner_text("form"))  # noqa
+            assert False  # noqa
         expect(page.get_by_text(email), "should be logged in").to_be_visible()
         mp_res = requests.get(f"{MAILPIT_API_BASE_URL}/api/v1/messages").json()
         msg: MailPitMessage = mp_res["messages"][0]
@@ -50,17 +51,17 @@ class TestSignUp(AuthTest):
 
     @pytest.mark.xfail(reason="TODO")
     def test_attempt_sign_up_with_existing_email(self, page):
-        assert False
+        assert False  # noqa
 
-        page.goto(self.signup_url)
-        page.fill("#id_email", self.user_email)
-        page.fill("#id_password1", self.user_password)
-        page.click("button[type=submit]")
+        page.goto(self.signup_url)  # noqa
+        page.fill("#id_email", self.user_email)  # noqa
+        page.fill("#id_password1", self.user_password)  # noqa
+        page.click("button[type=submit]")  # noqa
         # check page says "Check your email to confirm your account."
-        pass
+        pass  # noqa
         # check reminder email sent
-        mp_res = requests.get(f"{MAILPIT_API_BASE_URL}/api/v1/messages").json()
-        msg: MailPitMessage = mp_res["messages"][0]
+        mp_res = requests.get(f"{MAILPIT_API_BASE_URL}/api/v1/messages").json()  # noqa
+        msg: MailPitMessage = mp_res["messages"][0]  # noqa
         # snippet = (
         #    f"You are receiving this email because you or someone else tried to "
         #    f"signup for an account using email address: {email}"

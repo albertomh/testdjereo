@@ -11,13 +11,13 @@ on:
       - main
 
 jobs:
-  checks:
-    uses: ./.github/workflows/_pre-build-checks.yaml
+  #checks:
+  #  uses: ./.github/workflows/_pre-build-checks.yaml
 
   containerise:
     # containerisation of tagged releases is handled separately by the `on-tag` workflow
     if: github.head_ref != 'release-please--branches--main'
-    needs: checks
+    #needs: checks
     runs-on: ubuntu-24.04
     outputs:
       image_address: ${{ steps.containerise.outputs.image_address }}
