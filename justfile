@@ -55,8 +55,8 @@ profile_tests: _test_setup
 e2e $USE_ENV_TEST="1": _test_setup
   #!/usr/bin/env bash
   set -euo pipefail
-  mailpit &
-  MAILPIT_PID=$!
+  #mailpit &
+  #MAILPIT_PID=$!
   uv run manage.py flush --no-input
   uv run manage.py migrate
   uv run manage.py seed_database
@@ -64,5 +64,5 @@ e2e $USE_ENV_TEST="1": _test_setup
   SERVER_PID=$!
   uv run pytest tests_e2e/ --pdb || STATUS=$?
   kill $SERVER_PID
-  kill $MAILPIT_PID
+  #kill $MAILPIT_PID
   exit ${STATUS:-0}
