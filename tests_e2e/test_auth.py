@@ -1,6 +1,7 @@
 import random
 import string
 
+import pytest
 import requests
 from playwright.sync_api import expect
 
@@ -28,11 +29,15 @@ class TestSignUp(AuthTest):
 
         email = f"{''.join(random.choices(string.ascii_lowercase, k=6))}@example.com"
         page.fill("#id_email", email)
-        password = "".join(random.choices(string.ascii_lowercase + string.digits, k=16))
-        page.fill("#id_password1", f"Aa1!strong{password}")
+        password = "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
+        page.fill("#id_password1", password)
         page.click("button[type=submit]")
 
-        expect(page).to_have_url(f"{BASE_URL}/")
+        try:
+            expect(page).to_have_url(f"{BASE_URL}/")
+        except ValueError:
+            print(page.content())
+            assert False
         expect(page.get_by_text(email), "should be logged in").to_be_visible()
         mp_res = requests.get(f"{MAILPIT_API_BASE_URL}/api/v1/messages").json()
         msg: MailPitMessage = mp_res["messages"][0]
@@ -42,6 +47,25 @@ class TestSignUp(AuthTest):
             "your email address to register"
         )
         assert snippet in msg["Snippet"]
+
+    @pytest.mark.xfail(reason="TODO")
+    def test_attempt_sign_up_with_existing_email(self, page):
+        assert False
+
+        page.goto(self.signup_url)
+        page.fill("#id_email", self.user_email)
+        page.fill("#id_password1", self.user_password)
+        page.click("button[type=submit]")
+        # check page says "Check your email to confirm your account."
+        pass
+        # check reminder email sent
+        mp_res = requests.get(f"{MAILPIT_API_BASE_URL}/api/v1/messages").json()
+        msg: MailPitMessage = mp_res["messages"][0]
+        # snippet = (
+        #    f"You are receiving this email because you or someone else tried to "
+        #    f"signup for an account using email address: {email}"
+        # )
+        # assert snippet in msg["Snippet"]
 
 
 class TestLogInPage(AuthTest):
