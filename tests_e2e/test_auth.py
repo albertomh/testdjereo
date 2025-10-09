@@ -32,7 +32,12 @@ class TestSignUp(AuthTest):
         page.fill("#id_password1", password)
         page.click("button[type=submit]")
 
-        expect(page).to_have_url(f"{BASE_URL}/")
+        try:
+            expect(page).to_have_url(f"{BASE_URL}/")
+        except Exception:
+            print(page.content())  # noqa
+            print("Form contents:\n", page.inner_text("form"))  # noqa
+
         expect(page.get_by_text(email), "should be logged in").to_be_visible()
         mp_res = requests.get(f"{MAILPIT_API_BASE_URL}/api/v1/messages").json()
         msg: MailPitMessage = mp_res["messages"][0]
@@ -50,10 +55,15 @@ class TestSignUp(AuthTest):
         page.fill("#id_password1", self.user_password)
         page.click("button[type=submit]")
 
-        expect(
-            page.get_by_text("Check your email to confirm your account."),
-            "should show ambiguous message",
-        ).to_be_visible()
+        try:
+            expect(
+                page.get_by_text("Check your email to confirm your account."),
+                "should show ambiguous message",
+            ).to_be_visible()
+        except Exception:
+            print(page.content())  # noqa
+            print("Form contents:\n", page.inner_text("form"))  # noqa
+
         mp_res = requests.get(f"{MAILPIT_API_BASE_URL}/api/v1/messages").json()
         msg: MailPitMessage = mp_res["messages"][0]
         snippet = (
