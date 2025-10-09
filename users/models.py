@@ -42,7 +42,7 @@ class AuthUser(UpdatedAtModel, UuidModel, AbstractUser):
 
 
 class UserProfile(UuidModel):
-    user: models.OneToOneField[UserProfile, AuthUser] = models.OneToOneField(
+    user: models.OneToOneField["UserProfile", AuthUser] = models.OneToOneField(
         "users.AuthUser",
         on_delete=models.CASCADE,
     )
