@@ -16,7 +16,7 @@
 #
 # Based on <https://github.com/astral-sh/uv-docker-example/blob/main/Dockerfile>
 
-FROM python:3.14-slim-bookworm
+FROM python:3.13-slim-bookworm
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 ENV PORT=

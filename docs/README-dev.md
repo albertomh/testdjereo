@@ -79,7 +79,7 @@ nox -k tests
 You can select a single session ie.
 
 ```sh
-nox --session tests_with_coverage-3.14
+nox --session tests_with_coverage-3.13
 ```
 
 ### The test database

@@ -3,7 +3,7 @@
 import nox
 
 # https://endoflife.date/python
-py_versions = ["3.14"]
+py_versions = ["3.13"]
 OLDEST_PY = py_versions[0]
 MIDDLE_PY = py_versions[1:-1]
 LATEST_PY = py_versions[-1]

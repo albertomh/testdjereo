@@ -309,7 +309,7 @@ SILENCED_SYSTEM_CHECKS = [
 
 # <https://github.com/adamchainz/django-version-checks#usage>
 VERSION_CHECKS = {
-    "python": ">=3.14",
+    "python": ">=3.13",
     "postgresql": "~=17.0",
 }
 
