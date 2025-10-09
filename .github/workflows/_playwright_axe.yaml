@@ -1,15 +1,15 @@
-# Run Playwright E2E tests in CI.
+# Run Playwright accessibility tests in CI.
 #
 # Usage:
 # ```
 # jobs:
-#   e2e:
+#   accessibility:
 #     needs: containerise
-#     uses: ./.github/workflows/_playwright_e2e.yaml
+#     uses: ./.github/workflows/_playwright_axe.yaml
 #     with:
 #       image_address: ${{ needs.containerise.outputs.image_address }}
 # ```
-name: E2E
+name: Accessibility tests
 
 on:
   workflow_call:
@@ -19,7 +19,7 @@ on:
         type: string
 
 jobs:
-  playwright:
+  axe:
     runs-on: ubuntu-24.04
     env:
       USE_ENV_TEST: "1"
@@ -96,4 +96,4 @@ jobs:
       - if: ${{ steps.cache-playwright.outputs.cache-hit != 'true' }}
         run: uv run playwright install --with-deps chromium
 
-      - run: uv run pytest tests_e2e/ -m "not axe"
+      - run: uv run pytest tests_e2e/ -m axe

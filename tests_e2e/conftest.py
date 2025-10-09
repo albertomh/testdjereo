@@ -7,10 +7,10 @@ import time
 
 import pytest
 import requests  # type: ignore
+from axe_playwright_python.sync_playwright import Axe
 from environs import Env
 from playwright.sync_api import Browser, Playwright, sync_playwright
 from playwright.sync_api import Error as PlaywrightError
-from axe_playwright_python.sync_playwright import Axe
 
 env = Env()
 env.read_env()
@@ -76,6 +76,7 @@ def page(browser):
     page = context.new_page()
     yield page
     context.close()
+
 
 @pytest.fixture
 def axe():

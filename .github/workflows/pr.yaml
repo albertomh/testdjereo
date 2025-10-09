@@ -13,3 +13,35 @@ on:
 jobs:
   checks:
     uses: ./.github/workflows/_pre-build-checks.yaml
+
+  containerise:
+    needs: checks
+    runs-on: ubuntu-24.04
+    outputs:
+      image_address: ${{ steps.containerise.outputs.image_address }}
+    steps:
+      - uses: actions/checkout@v5
+      - run: |
+          echo "REPO_NAME=${GITHUB_REPOSITORY@L}" >> $GITHUB_ENV
+          echo "SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - id: containerise
+        uses: ./.github/actions/containerise
+        with:
+          dockerfile: _deploy/deploy.Dockerfile
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+          tags:
+            ghcr.io/${{ env.REPO_NAME }}/${{ github.ref_name }}:latest,
+            ghcr.io/${{ env.REPO_NAME }}/${{ github.ref_name }}:${{ env.SHA_SHORT }},
+
+  e2e:
+    needs: containerise
+    uses: ./.github/workflows/_playwright_e2e.yaml
+    with:
+      image_address: ${{ needs.containerise.outputs.image_address }}
+
+  accessibility:
+    needs: containerise
+    uses: ./.github/workflows/_playwright_axe.yaml
+    with:
+      image_address: ${{ needs.containerise.outputs.image_address }}

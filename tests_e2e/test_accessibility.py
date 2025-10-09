@@ -1,12 +1,13 @@
 import warnings
 
 import pytest
-from playwright.sync_api import Page
 from axe_playwright_python.sync_playwright import Axe
+from playwright.sync_api import Page
 
 from tests_e2e.conftest import BASE_URL
 
 
+@pytest.mark.axe
 class TestAccessibility:
     @pytest.mark.parametrize(
         "url",
@@ -20,9 +21,10 @@ class TestAccessibility:
         page.goto(url)
         results = axe.run(page)
 
-        if results.violations_count > 0:
+        count = results.violations_count
+        if count > 0:
             report = results.generate_report()
-            warnings.warn(
-                f"\n{results.violations_count} accessibility violations at {url}:\n{report}",
+            warnings.warn(  # noqa: B028 no-explicit-stacklevel
+                f"\n{count} accessibility violations at {url}:\n{report}",
                 UserWarning,
             )
