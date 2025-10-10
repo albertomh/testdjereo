@@ -74,6 +74,7 @@ jobs:
         run: |
           docker run --rm \
             --add-host=host.docker.internal:host-gateway \
+            --network test-network \
             --env USE_ENV_TEST \
             --env SECRET_KEY \
             --env ALLOWED_HOSTS \
