@@ -83,6 +83,7 @@ jobs:
             --publish 8000:8000 \
             --volume testdjereo_static:/app/static \
             ${{ inputs.image_address }}
+            echo "CONTAINER_ID=$CONTAINER_ID" >> $GITHUB_ENV
 
       - name: Cache Playwright browsers
         id: cache-playwright
@@ -97,3 +98,7 @@ jobs:
         run: uv run playwright install --with-deps chromium
 
       - run: uv run pytest tests_e2e/ -m "not axe"
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker logs $CONTAINER_ID
