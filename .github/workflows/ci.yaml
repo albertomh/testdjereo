@@ -1,0 +1,53 @@
+# Continuous Integration pipeline
+# Runs when a Pull Request is merged into the 'main' branch.
+#
+# Does not run the 'containerise' job for merges of the 'release-please--branches--main'
+# branch since this is handled by the `on-tag` workflow.
+name: CI
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+jobs:
+  checks:
+    # this job is redundant if pipeline was triggered by merge of a 'Release Please' PR
+    if: ${{ github.event.pull_request.merged && github.head_ref != 'release-please--branches--main' }}
+    uses: ./.github/workflows/_pre-build-checks.yaml
+
+  containerise:
+    # containerisation of tagged releases is handled separately by the `on-tag` workflow
+    if: github.head_ref != 'release-please--branches--main'
+    needs: checks
+    runs-on: ubuntu-24.04
+    outputs:
+      image_address: ${{ steps.containerise.outputs.image_address }}
+    steps:
+      - uses: actions/checkout@v5
+      - run: |
+          echo "REPO_NAME=${GITHUB_REPOSITORY@L}" >> $GITHUB_ENV
+          echo "SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - id: containerise
+        uses: ./.github/actions/containerise
+        with:
+          dockerfile: _deploy/deploy.Dockerfile
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+          tags:
+            ghcr.io/${{ env.REPO_NAME }}/${{ github.ref_name }}:latest,
+            ghcr.io/${{ env.REPO_NAME }}/${{ github.ref_name }}:${{ env.SHA_SHORT }},
+
+  e2e:
+    needs: containerise
+    uses: ./.github/workflows/_playwright_e2e.yaml
+    with:
+      image_address: ${{ needs.containerise.outputs.image_address }}
+
+  accessibility:
+    needs: containerise
+    uses: ./.github/workflows/_playwright_axe.yaml
+    with:
+      image_address: ${{ needs.containerise.outputs.image_address }}

@@ -1,0 +1,22 @@
+# Re-usable GitHub Action that runs the Django unit test suite.
+#
+# Usage:
+#   ```
+#   steps:
+#     - uses: ./.github/actions/test
+#   ```
+
+name: 'test'
+description: 'Run unit tests'
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: astral-sh/setup-uv@v6
+      with:
+        version: "0.8.22"
+        enable-cache: true
+        prune-cache: false
+    - uses: extractions/setup-just@v3
+    - run: just test
+      shell: bash

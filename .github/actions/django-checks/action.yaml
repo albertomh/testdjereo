@@ -1,0 +1,45 @@
+# Re-usable GitHub Action that runs Django system checks.
+# Args:
+#   deploy[str]: whether to run Django checks with `--deploy` flag
+#
+# Usage:
+#   ```
+#   steps:
+#     - uses: ./.github/actions/django-checks
+#       with:
+#         deploy: true|false
+#   ```
+
+name: 'django-checks'
+description: 'Run Django system checks'
+
+inputs:
+  deploy:
+    description: 'Run checks in deploy mode'
+    required: false
+    default: 'false'
+  django-secret-key:
+    description: 'Secret key for the Django webapp'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: astral-sh/setup-uv@v6
+      with:
+        version: "0.8.22"
+        enable-cache: true
+        prune-cache: false
+    - uses: extractions/setup-just@v3
+    - run: |
+        if [[ "${{ inputs.deploy }}" == "true" ]]; then
+            cp _deploy/.env.deploy .env
+            grep -v '^SECRET_KEY=' .env > .env.tmp && mv .env.tmp .env
+            echo "SECRET_KEY=${{ inputs.django-secret-key }}" >> .env
+            PYTHONDEVMODE=1 just manage check --deploy --fail-level WARNING
+        else
+            cp .env.in .env
+            PYTHONDEVMODE=1 just manage check
+        fi
+      shell: bash
