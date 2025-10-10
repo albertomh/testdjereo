@@ -73,6 +73,7 @@ jobs:
       - name: Run webapp in the background
         run: |
           docker run --detach \
+            --name testdjereo-webapp \
             --add-host=host.docker.internal:host-gateway \
             --env USE_ENV_TEST \
             --env SECRET_KEY \
@@ -83,7 +84,6 @@ jobs:
             --publish 8000:8000 \
             --volume testdjereo_static:/app/static \
             ${{ inputs.image_address }}
-            echo "CONTAINER_ID=$CONTAINER_ID" >> $GITHUB_ENV
 
       - name: Cache Playwright browsers
         id: cache-playwright
@@ -101,4 +101,4 @@ jobs:
 
       - name: Show container logs on failure
         if: failure()
-        run: docker logs $CONTAINER_ID
+        run: docker logs testdjereo-webapp
