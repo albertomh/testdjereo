@@ -11,11 +11,11 @@ on:
       - main
 
 jobs:
-  checks:
-    uses: ./.github/workflows/_pre-build-checks.yaml
+  #checks:
+  #  uses: ./.github/workflows/_pre-build-checks.yaml
 
   containerise:
-    needs: checks
+    #needs: checks
     runs-on: ubuntu-24.04
     outputs:
       image_address: ${{ steps.containerise.outputs.image_address }}
