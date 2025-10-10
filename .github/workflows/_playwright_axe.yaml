@@ -79,6 +79,7 @@ jobs:
             --env ALLOWED_HOSTS \
             --env CSRF_TRUSTED_ORIGINS \
             --env DATABASE_URL \
+            --env EMAIL_HOST \
             --env PORT=8000 \
             --publish 8000:8000 \
             --volume testdjereo_static:/app/static \
