@@ -9,7 +9,7 @@ MIDDLE_PY = py_versions[1:-1]
 LATEST_PY = py_versions[-1]
 COVERAGE_PY = list({OLDEST_PY, LATEST_PY})  # deduplicate if both are the same
 
-nox.options.default_venv_backend = "uv"
+nox.options.default_venv_backend = "uv|virtualenv"
 nox.options.sessions = [f"tests_with_coverage-{LATEST_PY}"]
 
 RUN_TESTS_ARGS = ["manage.py", "test"]
