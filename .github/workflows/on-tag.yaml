@@ -10,10 +10,18 @@
 name: on-tag
 
 on:
+  # TODO: reinstate
+  #push:
+  #  # run this workflow only if the tag matches the format 'v<semver>'
+  #  tags:
+  #    - 'v*.*.*'
+  # TODO: remove
   push:
-    # run this workflow only if the tag matches the format 'v<semver>'
-    tags:
-      - 'v*.*.*'
+    branches-ignore:
+      - main
+  pull_request:
+    branches-ignore:
+      - main
 
 jobs:
   checks:
