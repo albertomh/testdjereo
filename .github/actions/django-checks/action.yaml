@@ -32,13 +32,16 @@ runs:
         enable-cache: true
     - uses: extractions/setup-just@v3
     - run: |
-        if [[ "${{ inputs.deploy }}" == "true" ]]; then
+        if [[ "$DEPLOY" == "true" ]]; then
             cp _deploy/.env.deploy .env
             grep -v '^SECRET_KEY=' .env > .env.tmp && mv .env.tmp .env
-            echo "SECRET_KEY=${{ inputs.django-secret-key }}" >> .env
+            printf 'SECRET_KEY=%s\n' "$DJANGO_SECRET_KEY" >> .env
             PYTHONDEVMODE=1 just manage check --deploy --fail-level WARNING
         else
             cp .env.in .env
             PYTHONDEVMODE=1 just manage check
         fi
       shell: bash
+      env:
+        DEPLOY: ${{ inputs.deploy }}
+        DJANGO_SECRET_KEY: ${{ inputs.django-secret-key }}
