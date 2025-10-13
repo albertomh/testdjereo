@@ -1,0 +1,105 @@
+# Run playwright E2E tests in CI.
+#
+# Usage:
+# ```
+# jobs:
+#   e2e:
+#     needs: containerise
+#     uses: ./.github/workflows/_playwright_e2e.yaml
+#     with:
+#       image_address: ${{ needs.containerise.outputs.image_address }}
+# ```
+name: E2E
+
+on:
+  workflow_call:
+    inputs:
+      image_address:
+        required: true
+        type: string
+
+jobs:
+  playwright:
+    runs-on: ubuntu-24.04
+    env:
+      USE_ENV_TEST: "1"
+      SECRET_KEY: django-insecure_not-a-secret
+      ALLOWED_HOSTS: 127.0.0.1,::1
+      CSRF_TRUSTED_ORIGINS: http://127.0.0.1
+      EMAIL_HOST: mailpit
+      DATABASE_URL: postgres://testdjereo:password@host.docker.internal:5432/testdjereo
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: testdjereo
+          POSTGRES_USER: testdjereo
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.2"
+          enable-cache: true
+
+      - name: Create Docker network
+        run: docker network create test-network
+
+      - name: Run Mailpit in network
+        run: |
+            docker run --detach \
+            --name mailpit \
+            --network test-network \
+            --env TZ=Europe/London \
+            -p 1025:1025 \
+            -p 8025:8025 \
+            axllent/mailpit:v1.27
+
+      - name: Apply migrations and seed database
+        run: |
+          docker run --rm \
+            --add-host=host.docker.internal:host-gateway \
+            --env USE_ENV_TEST \
+            --env SECRET_KEY \
+            --env ALLOWED_HOSTS \
+            --env CSRF_TRUSTED_ORIGINS \
+            --env DATABASE_URL \
+            ${{ inputs.image_address }} \
+            /bin/bash -c "python manage.py migrate && python manage.py seed_database"
+
+      - name: Run webapp in the background
+        run: |
+          docker run --detach \
+            --network test-network \
+            --add-host=host.docker.internal:host-gateway \
+            --env USE_ENV_TEST \
+            --env SECRET_KEY \
+            --env ALLOWED_HOSTS \
+            --env CSRF_TRUSTED_ORIGINS \
+            --env EMAIL_HOST \
+            --env DATABASE_URL \
+            --env PORT=8000 \
+            --publish 8000:8000 \
+            --volume testdjereo_static:/app/static \
+            ${{ inputs.image_address }}
+
+      - name: Cache Playwright browsers
+        id: cache-playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-chromium
+
+      - run: uv sync --group=test
+
+      - if: ${{ steps.cache-playwright.outputs.cache-hit != 'true' }}
+        run: uv run playwright install --with-deps chromium
+
+      - run: uv run pytest tests_e2e/ -m "not axe"
