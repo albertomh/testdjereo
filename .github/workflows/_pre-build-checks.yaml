@@ -91,7 +91,7 @@ jobs:
           version: "0.9.2"
           enable-cache: true
       - uses: wntrblm/nox@2025.05.01
-      - run: nox --session "${{ matrix.session }}"
+      - run: nox --session "${{ matrix.session }}" -- --pdb
 
   django:
     needs:
