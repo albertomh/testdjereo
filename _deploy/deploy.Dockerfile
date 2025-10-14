@@ -37,6 +37,14 @@ WORKDIR /app
 # uv sync:
 #     --locked: Assert that `uv.lock` will remain unchanged as part of running `uv sync`.
 
+# Only needed while `brotli` wheels for 3.14 aren't available
+# <https://github.com/google/brotli/issues/1351>
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
 # Synchronise dependencies without the application itself.
 # Cached until `uv.lock` or `pyproject.toml` change.
 RUN --mount=type=cache,target=/root/.cache/uv \
