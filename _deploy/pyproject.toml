@@ -1,0 +1,12 @@
+[project]
+name = "testdjereo-deploy"
+version = "0.0.0"
+description = ""
+authors = [
+    {name = "Alberto Morón Hernández", email = "alberto.moronh@gmail.com"}
+]
+requires-python = ">=3.14"
+dependencies = [
+    "pydo>=0.17.0,<0.18.0",
+    "structlog>=25.4.0,<26.0.0",
+]
