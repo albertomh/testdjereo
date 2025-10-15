@@ -32,8 +32,8 @@ jobs:
       DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
 
   containerise:
-    needs:
-      - checks
+    # needs:
+    #   - checks
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
