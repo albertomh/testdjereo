@@ -38,7 +38,7 @@ def get_DO_client():
     1. Create an API token <https://cloud.digitalocean.com/account/api/tokens>
         1. Set an expiration date
         2. Set Custom Scopes:
-            - droplet: `create`, `update`
+            - droplet: `create`, `update`, `delete`
             - ssh_key: `read`
             - tag: `create`
     """

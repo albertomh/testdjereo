@@ -16,7 +16,7 @@
 # Click-ops steps for programmatic access to Digital Ocean (`pydo`) to work:
 # 1. Populate a GitHub Actions secret called `DIGITALOCEAN_TOKEN` with a DO API token.
 #    The token must have the scopes:
-#      - droplet: `create`, `update`
+#      - droplet: `create`, `update`, `delete`
 #      - ssh_key: `read`
 #      - tag: `create`
 #    <https://cloud.digitalocean.com/account/api/tokens>

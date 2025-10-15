@@ -60,6 +60,11 @@ class DropletResponse(BaseDroplet):
     created_at: str
 
 
+class DropletCreateResponse(TypedDict):
+    droplet: DropletResponse
+    links: dict
+
+
 class DropletListResponse(TypedDict):
     droplets: list[DropletResponse]
     links: dict

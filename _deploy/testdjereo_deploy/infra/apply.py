@@ -10,6 +10,7 @@ import structlog
 from pydo import Client as DO_Client
 
 from testdjereo_deploy._types import (
+    DropletCreateResponse,
     DropletListResponse,
     DropletRequest,
     DropletResponse,
@@ -105,13 +106,13 @@ def manage_droplets(
         try:
             # deep copy + convert UUIDs
             safe_req = json.loads(json.dumps(droplet_req, default=str))
-            res: DropletListResponse = client.droplets.create(body=safe_req)
+            res: DropletCreateResponse = client.droplets.create(body=safe_req)
         except Exception as err:
             LOGGER.error("Error creating Droplet", err=str(err))
             raise err
         else:
             wkid = get_wkid_from_tags(droplet_req["tags"])
-            LOGGER.info("Created Droplet", wkid=str(wkid), id=res["droplets"][0]["id"])
+            LOGGER.info("Created Droplet", wkid=str(wkid), id=res["droplet"]["id"])
 
     if to_create:
         LOGGER.info("Droplets to create", uuids=[str(id) for id in to_create])
