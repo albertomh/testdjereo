@@ -87,16 +87,16 @@ def manage_droplets(
 
     existing = actual_droplet_uuids & future_droplet_uuids
     to_create = future_droplet_uuids - actual_droplet_uuids
-    to_delete = actual_droplet_uuids - future_droplet_uuids
+    to_destroy = actual_droplet_uuids - future_droplet_uuids
 
     LOGGER.info(
         "Droplet comparison",
         existing=len(existing),
         to_create=len(to_create),
-        to_delete=len(to_delete),
+        to_destroy=len(to_destroy),
     )
 
-    if not to_create and not to_delete:
+    if not to_create and not to_destroy:
         LOGGER.info(
             "Droplets in environment already match blueprint", environment=env.value
         )
@@ -122,22 +122,22 @@ def manage_droplets(
                 if wkid in to_create:
                     _create_droplet(droplet_req)
 
-    def _delete_droplet(droplet_id: int):
+    def _destroy_droplet(droplet_id: int):
         try:
-            client.droplets.delete(droplet_id=droplet_id)
+            client.droplets.destroy(droplet_id=droplet_id)
         except Exception as err:
-            LOGGER.error("Failed to delete Droplet", err=str(err))
+            LOGGER.error("Failed to destroy Droplet", err=str(err))
             raise err
         else:
-            LOGGER.info("Deleted Droplet", wkid=wkid, id=droplet_id)
+            LOGGER.info("Destroyed Droplet", wkid=str(wkid), id=droplet_id)
 
-    if to_delete:
-        LOGGER.info("Droplets to delete", uuids=[str(id) for id in to_delete])
+    if to_destroy:
+        LOGGER.info("Droplets to destroy", uuids=[str(id) for id in to_destroy])
         if not is_dry_run:
             for droplet in actual_droplets:
                 wkid = get_wkid_from_tags(droplet["tags"])
-                if wkid in to_delete:
-                    _delete_droplet(droplet["id"])
+                if wkid in to_destroy:
+                    _destroy_droplet(droplet["id"])
 
 
 def apply(is_dry_run: bool, client: DO_Client, env: Environment):
