@@ -98,14 +98,31 @@ def manage_droplets(
         )
         return
 
+    def _delete_droplet(droplet_id: int):
+        try:
+            client.droplets.delete(droplet_id=droplet_id)
+        except Exception as err:
+            LOGGER.error(err=str(err))
+            raise err
+        else:
+            LOGGER.info("Deleted Droplet", wkid=wkid, id=droplet_id)
+
     if to_delete:
         LOGGER.info("Droplets to delete", uuids=[str(id) for id in to_delete])
         if not is_dry_run:
             for droplet in actual_droplets:
                 wkid = get_wkid_from_tags(droplet["tags"])
                 if wkid in to_delete:
-                    LOGGER.info("Deleting Droplet", id=droplet["id"], wkid=wkid)
-                    client.droplets.delete(droplet_id=droplet["id"])
+                    _delete_droplet(droplet["id"])
+
+    def _create_droplet(droplet_req: DropletRequest):
+        try:
+            res: DropletListResponse = client.droplets.create(body=droplet_req)
+        except Exception as err:
+            LOGGER.error(err=str(err))
+            raise err
+        else:
+            LOGGER.info("Created Droplet", wkid=wkid, id=res["droplets"][0]["id"])
 
     if to_create:
         LOGGER.info("Droplets to create", uuids=[str(id) for id in to_create])
@@ -113,8 +130,7 @@ def manage_droplets(
             for droplet_req in future_droplets:
                 wkid = get_wkid_from_tags(droplet_req["tags"])
                 if wkid in to_create:
-                    LOGGER.info("Creating Droplet", wkid=wkid)
-                    client.droplets.create(body=droplet_req)
+                    _create_droplet(droplet_req)
 
 
 def apply(is_dry_run: bool, client: DO_Client, env: Environment):

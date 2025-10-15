@@ -1,0 +1,112 @@
+#cloud-config
+
+# <https://cloudinit.readthedocs.io/en/latest/>
+# <https://www.digitalocean.com/community/tutorials/an-introduction-to-cloud-config-scripting>
+# <https://gist.github.com/dazeb/fde301b5035e8af3b040c6109c3d8170>
+
+# hostname: example-host
+# fqdn: example-host.example.com
+# manage_etc_hosts: true
+
+swap:
+  filename: /swapfile
+  size: "1G"
+  maxsize: "2G"
+
+timezone: "Etc/UTC"
+locale: "en_US.UTF-8"
+
+groups:
+  - docker
+
+users:
+  - name: admin
+    groups: sudo
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) ALL']
+    ssh-authorized-keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF3qFAWvXdBQT/KkyfYZ3vliPkrDrw119kzOLUEooBms bertillo@MTYYVLQ6X2.local
+
+system_info:
+  default_user:
+    groups: [docker]
+
+apt:
+  sources:
+    docker.list:
+      source: deb [arch=amd64] https://download.docker.com/linux/debian $RELEASE stable
+      keyid: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+
+package_update: true
+package_upgrade: true
+package_reboot_if_required: true
+unattended_upgrades:
+  enable: true
+  automatic_reboot: true
+  automatic_reboot_time: "02:00"
+  origin_patterns:
+    - 'origin=Debian,codename=${distro_codename},label=Debian-Security'
+
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gnupg-agent
+  - software-properties-common
+  - unattended-upgrades
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - ufw
+  - fail2ban
+  - vim
+  - git
+
+write_files:
+  # fine-tune swap behaviour for swapfile created elsewhere
+  - path: /etc/sysctl.d/99-swap.conf
+    content: |
+      vm.swappiness=10
+      vm.vfs_cache_pressure=50
+  # enable ipv4 forwarding, required on CIS hardened machines
+  - path: /etc/sysctl.d/enabled_ipv4_forwarding.conf
+    content: |
+      net.ipv4.ip_forward=1
+      net.ipv4.conf.all.forwarding=1
+  - path: /etc/ssh/sshd_config.d/99-hardening.conf
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      X11Forwarding no
+      ClientAliveInterval 300
+      ClientAliveCountMax 2
+  - path: /etc/fail2ban/jail.local
+    content: |
+      [sshd]
+      enabled = true
+      bantime = 1h
+      findtime = 10m
+      maxretry = 5
+
+runcmd:
+  - ufw allow 22/tcp
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  # `lo`: loopback
+  - ufw allow in on lo
+  - ufw allow out on lo
+  - ufw --force enable
+  - systemctl enable fail2ban
+  - systemctl start fail2ban
+
+# disable root SSH login and password authentication for SSH
+ssh_pwauth: false
+disable_root: true
+
+final_message: "cloud-init completed at $TIMESTAMP after $UPTIME seconds"
+
+power_state:
+  mode: reboot
+  message: Rebooting after initial setup
+  timeout: 30
+  condition: True

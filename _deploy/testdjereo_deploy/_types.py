@@ -40,10 +40,13 @@ class DropletRequest(BaseDroplet):
     region: DORegion
     size: DropletSize
     image: DropletImage
-    ssh_keys: list
+    # the fingerprint(s) of SSH keys to embed in the Droplet's root account
+    ssh_keys: list[str]
     backups: NotRequired[bool]
     ipv6: NotRequired[bool]
     monitoring: NotRequired[bool]
+    # `user_data` should be the contents of a 'cloud-config' file
+    # <https://www.digitalocean.com/community/tutorials/an-introduction-to-cloud-config-scripting>
     user_data: str
     well_known_uuid: UUID
 

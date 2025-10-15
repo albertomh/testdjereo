@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from pathlib import Path
 from uuid import UUID
 
 import structlog
@@ -51,3 +52,12 @@ def get_wkid_from_tags(tags: list[str]) -> UUID | None:
     if not uuid_tags:
         return None
     return UUID(uuid_tags[0].split(":")[1])
+
+
+def load_cloud_config(name: str) -> str:
+    """Return the plain-text contents of a cloud-config YAML file, ready to be passed to
+    the body of a `client.droplets.create()` call (ie. a DropletRequest object).
+    """
+    PACKAGE_ROOT = Path(__file__).resolve().parent
+    path = PACKAGE_ROOT / "infra" / "cloud-config" / f"{name}.yaml"
+    return path.read_text(encoding="utf-8")
