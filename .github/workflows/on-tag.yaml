@@ -70,12 +70,11 @@ jobs:
         with:
           version: "0.9.3"
           enable-cache: true
-      # TODO: run with `--no-dry-run` to actually apply!
       - name: Apply infra blueprint to 'test' environment
         env:
           DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
         working-directory: ./_deploy/
-        run: uv run python -m testdjereo_deploy.infra.apply test
+        run: uv run python -m testdjereo_deploy.infra.apply test --no-dry-run
 
   health_test:
     needs:
