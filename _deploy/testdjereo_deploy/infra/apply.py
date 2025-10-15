@@ -1,6 +1,7 @@
 import argparse
 import copy
 import importlib
+import json
 import pkgutil
 import pprint
 from types import ModuleType
@@ -100,11 +101,31 @@ def manage_droplets(
         )
         return
 
+    def _create_droplet(droplet_req: DropletRequest):
+        try:
+            # deep copy + convert UUIDs
+            safe_req = json.loads(json.dumps(droplet_req, default=str))
+            res: DropletListResponse = client.droplets.create(body=safe_req)
+        except Exception as err:
+            LOGGER.error("Error creating Droplet", err=str(err))
+            raise err
+        else:
+            wkid = get_wkid_from_tags(droplet_req["tags"])
+            LOGGER.info("Created Droplet", wkid=str(wkid), id=res["droplets"][0]["id"])
+
+    if to_create:
+        LOGGER.info("Droplets to create", uuids=[str(id) for id in to_create])
+        if not is_dry_run:
+            for droplet_req in future_droplets:
+                wkid = get_wkid_from_tags(droplet_req["tags"])
+                if wkid in to_create:
+                    _create_droplet(droplet_req)
+
     def _delete_droplet(droplet_id: int):
         try:
             client.droplets.delete(droplet_id=droplet_id)
         except Exception as err:
-            LOGGER.error(err=str(err))
+            LOGGER.error("Failed to delete Droplet", err=str(err))
             raise err
         else:
             LOGGER.info("Deleted Droplet", wkid=wkid, id=droplet_id)
@@ -116,23 +137,6 @@ def manage_droplets(
                 wkid = get_wkid_from_tags(droplet["tags"])
                 if wkid in to_delete:
                     _delete_droplet(droplet["id"])
-
-    def _create_droplet(droplet_req: DropletRequest):
-        try:
-            res: DropletListResponse = client.droplets.create(body=droplet_req)
-        except Exception as err:
-            LOGGER.error(err=str(err))
-            raise err
-        else:
-            LOGGER.info("Created Droplet", wkid=wkid, id=res["droplets"][0]["id"])
-
-    if to_create:
-        LOGGER.info("Droplets to create", uuids=[str(id) for id in to_create])
-        if not is_dry_run:
-            for droplet_req in future_droplets:
-                wkid = get_wkid_from_tags(droplet_req["tags"])
-                if wkid in to_create:
-                    _create_droplet(droplet_req)
 
 
 def apply(is_dry_run: bool, client: DO_Client, env: Environment):
