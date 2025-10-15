@@ -30,7 +30,7 @@ jobs:
       DATABASE_URL: postgres://testdjereo:password@host.docker.internal:5432/testdjereo
     services:
       postgres:
-        image: postgres:17
+        image: postgres:18
         env:
           POSTGRES_DB: testdjereo
           POSTGRES_USER: testdjereo
