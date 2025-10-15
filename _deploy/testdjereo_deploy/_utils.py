@@ -39,7 +39,8 @@ def get_DO_client():
         1. Set an expiration date
         2. Set Custom Scopes:
             - droplet: `create`, `update`
-            - ... TODO
+            - ssh_key: `read`
+            - tag: `create`
     """
     return Client(get_DO_token())
 
