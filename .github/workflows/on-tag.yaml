@@ -6,6 +6,16 @@
 # key when running the django-checks action in deploy mode:
 # 1. Populate a GitHub Actions secret called `DJANGO_SECRET_KEY` with a random string at
 #    least 50 characters long in `github.com/albertomh/testdjereo/settings/secrets/actions`.
+#
+# Click-ops steps for per-environment clickable jobs to work:
+# 1. Navigate to <https://github.com/albertomh/testdjereo/settings/environments>
+# 2. Create environments 'test' & 'live'.
+#   1. Under 'Deployment branches and tags' set a 'deployment tag rule' with value "v[0-9]*.[0-9]*.[0-9]*"
+#   2. For 'live' only, tick 'Required reviewers' and add yourself.
+#
+# Click-ops steps for programmatic access to Digital Ocean (`pydo`) to work:
+# 1. Populate a GitHub Actions secret called `DIGITALOCEAN_TOKEN` with a DO API token.
+#    <https://cloud.digitalocean.com/account/api/tokens>
 
 name: on-tag
 
@@ -48,12 +58,6 @@ jobs:
             ghcr.io/${{ env.REPO_NAME }}:latest,
             ghcr.io/${{ env.REPO_NAME }}:${{ github.ref_name }},
 
-# Click-ops steps for the following to work:
-# 1. Navigate to <https://github.com/albertomh/testdjereo/settings/environments>
-# 2. Create environments 'test' & 'live'.
-#   1. Under 'Deployment branches and tags' set a 'deployment tag rule' with value "v[0-9]*.[0-9]*.[0-9]*"
-#   2. For 'live' only, tick 'Required reviewers' and add yourself.
-
   deploy_test:
     needs:
       - containerise
@@ -61,9 +65,17 @@ jobs:
     environment:
       name: test
     steps:
-      - shell: bash
-        run: |
-            echo "deploy to test!"
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.3"
+          enable-cache: true
+      # TODO: run with `--no-dry-run` to actually apply!
+      - name: Apply infra blueprint to 'test' environment
+        env:
+          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+        working-directory: ./_deploy/
+        run: uv run python -m testdjereo_deploy.infra.apply test
 
   health_test:
     needs:
@@ -74,16 +86,40 @@ jobs:
         run: |
             echo "check test health!"
 
-  deploy_live:
+  plan_live:
     needs:
       - health_test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.3"
+          enable-cache: true
+      - name: Plan infra blueprint changes for 'live' environment
+        env:
+          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+        working-directory: ./_deploy/
+        run: uv run python -m testdjereo_deploy.infra.apply live
+
+  deploy_live:
+    needs:
+      - plan_live
     runs-on: ubuntu-24.04
     environment:
       name: live
     steps:
-      - shell: bash
-        run: |
-            echo "deploy to live!"
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.3"
+          enable-cache: true
+      # TODO: run with `--no-dry-run` to actually apply!
+      - name: Apply infra blueprint to 'live' environment
+        env:
+          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+        working-directory: ./_deploy/
+        run: uv run python -m testdjereo_deploy.infra.apply live
 
   health_live:
     needs:

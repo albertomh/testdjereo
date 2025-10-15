@@ -59,10 +59,12 @@ def load_environment_blueprint(env: Environment) -> EnvironmentBlueprint:
             )
 
     if not blueprints:
-        raise RuntimeError("No blueprints found in 'infra/blueprints/'")
+        raise RuntimeError(
+            f"No blueprints found for env:{env.value} in 'infra/blueprints/'"
+        )
 
     if len(blueprints) != 1:
-        raise ValueError(f"Multiple blueprints found for {env.value}")
+        raise ValueError(f"Multiple blueprints found for env:{env.value}")
 
     bp = _tag_resources(blueprints[0])
     return bp
