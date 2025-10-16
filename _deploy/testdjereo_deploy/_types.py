@@ -1,9 +1,12 @@
+import os
+from dataclasses import dataclass, fields
 from enum import StrEnum, auto
 from typing import NotRequired, TypedDict
 from uuid import UUID
 
-
 # --- Digital Ocean-specific types -------------------------------------------------------
+
+
 class MetaApiRes(TypedDict):
     total: int
 
@@ -69,6 +72,60 @@ class DropletListResponse(TypedDict):
     droplets: list[DropletResponse]
     links: dict
     meta: MetaApiRes
+
+
+# --- cloud-init / #cloud-config types ---------------------------------------------------
+
+
+@dataclass(frozen=True)
+class CloudConfigEnv:
+    """
+    Base class for all environment-variable-backed #cloud-configs.
+    Subclasses must define fields that map to environment variables.
+    """
+
+    @classmethod
+    def from_env(cls):
+        """
+        Load and validate all required environment variables.
+        Raises EnvironmentError if any are missing.
+        """
+        missing = []
+        values = {}
+
+        for f in fields(cls):
+            env_name = f.name.upper()
+            val = os.getenv(env_name)
+            if not val:
+                missing.append(env_name)
+            else:
+                values[f.name] = val
+
+        if missing:
+            raise OSError(
+                f"Missing environment variables for {cls.__name__}: {', '.join(missing)}"
+            )
+
+        return cls(**values)
+
+    def as_dict(self) -> dict[str, str]:
+        return {f.name: getattr(self, f.name) for f in fields(self)}
+
+
+@dataclass(frozen=True)
+class PostgresServerEnv(CloudConfigEnv):
+    postgres_db: str
+    postgres_user: str
+    postgres_password: str
+
+
+@dataclass(frozen=True)
+class AppServerEnv(CloudConfigEnv):
+    debug: str
+    secret_key: str
+    allowed_hosts: str
+    csrf_trusted_origins: str
+    database_url: str
 
 
 # --- Application types ------------------------------------------------------------------

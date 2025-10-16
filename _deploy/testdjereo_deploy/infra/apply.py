@@ -116,8 +116,15 @@ def manage_droplets(
 
     if to_create:
         LOGGER.info("Droplets to create", uuids=[str(id) for id in to_create])
-        if not is_dry_run:
-            for droplet_req in future_droplets:
+        for droplet_req in future_droplets:
+            redacted_droplet = {
+                k: (v if k != "user_data" else "***REDACTED***")
+                for k, v in droplet_req.items()
+            }
+            if is_dry_run:
+                print("Would create Droplet:")  # noqa: T201
+                pprint.pp(redacted_droplet)
+            else:
                 wkid = get_wkid_from_tags(droplet_req["tags"])
                 if wkid in to_create:
                     _create_droplet(droplet_req)
@@ -142,8 +149,6 @@ def manage_droplets(
 
 def apply(is_dry_run: bool, client: DO_Client, env: Environment):
     blueprint: EnvironmentBlueprint = load_environment_blueprint(env)
-    pprint.pp(blueprint)
-
     blueprint_droplets = blueprint["droplets"]
     manage_droplets(is_dry_run, client, env, blueprint_droplets)
 

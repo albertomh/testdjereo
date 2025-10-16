@@ -21,5 +21,5 @@ cp infra/blueprints/_sample.py.txt infra/blueprints/test.py
 uv venv
 uv pip install -e .
 export DIGITALOCEAN_TOKEN=dop_v1_123...
-uv run python -m testdjereo_deploy.infra.apply test
+uv run python -m testdjereo_deploy.infra.apply test [--no-dry-run]
 ```

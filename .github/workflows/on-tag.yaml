@@ -2,24 +2,28 @@
 # Runs when a semver tag is pushed up to GitHub.
 #
 # IMPORTANT!
-# The following click-ops step must be taken to allow this action to propagate a secret
-# key when running the django-checks action in deploy mode:
-# 1. Populate a GitHub Actions secret called `DJANGO_SECRET_KEY` with a random string at
-#    least 50 characters long in `github.com/albertomh/testdjereo/settings/secrets/actions`.
+# The following click-ops steps must be taken to allow this action to succeed:
+#
+# Add the following GitHub Actions secrets via `github.com/albertomh/testdjereo/settings/secrets/actions`.
+# | secret_name        | content
+# | ------------------ | ---------------------------------- |
+# | DJANGO_SECRET_KEY  | random string >=50 characters long |
+# | POSTGRES_USER      | [used to configure DB server]      |
+# | POSTGRES_PASSWORD  | [used to configure DB server]      |
+# | POSTGRES_DB        | [used to configure DB server]      |
+# | DIGITALOCEAN_TOKEN | <see below>                        |
+#
+# 1. For the `DIGITALOCEAN_TOKEN`, mint a DO API token with scopes:
+#      - droplet: `create`, `update`, `delete`
+#      - ssh_key: `read`
+#      - tag: `create`
+#   <https://cloud.digitalocean.com/account/api/tokens>
 #
 # Click-ops steps for per-environment clickable jobs to work:
 # 1. Navigate to <https://github.com/albertomh/testdjereo/settings/environments>
 # 2. Create environments 'test' & 'live'.
 #   1. Under 'Deployment branches and tags' set a 'deployment tag rule' with value "v[0-9]*.[0-9]*.[0-9]*"
 #   2. For 'live' only, tick 'Required reviewers' and add yourself.
-#
-# Click-ops steps for programmatic access to Digital Ocean (`pydo`) to work:
-# 1. Populate a GitHub Actions secret called `DIGITALOCEAN_TOKEN` with a DO API token.
-#    The token must have the scopes:
-#      - droplet: `create`, `update`, `delete`
-#      - ssh_key: `read`
-#      - tag: `create`
-#    <https://cloud.digitalocean.com/account/api/tokens>
 
 name: on-tag
 
@@ -77,6 +81,9 @@ jobs:
       - name: Apply infra blueprint to 'test' environment
         env:
           DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
         working-directory: ./_deploy/
         run: uv run python -m testdjereo_deploy.infra.apply test --no-dry-run
 
@@ -87,7 +94,7 @@ jobs:
     steps:
       - shell: bash
         run: |
-            echo "check test health!"
+            echo "TODO: check test health!"
 
   plan_live:
     needs:
@@ -117,12 +124,11 @@ jobs:
         with:
           version: "0.9.3"
           enable-cache: true
-      # TODO: run with `--no-dry-run` to actually apply!
       - name: Apply infra blueprint to 'live' environment
         env:
           DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
         working-directory: ./_deploy/
-        run: uv run python -m testdjereo_deploy.infra.apply live
+        run: uv run python -m testdjereo_deploy.infra.apply live --no-dry-run
 
   health_live:
     needs:
@@ -131,4 +137,4 @@ jobs:
     steps:
       - shell: bash
         run: |
-            echo "check live health!"
+            echo "TODO: check live health!"

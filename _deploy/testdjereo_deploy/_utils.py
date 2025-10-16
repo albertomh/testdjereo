@@ -5,7 +5,10 @@ from pathlib import Path
 from uuid import UUID
 
 import structlog
+from jinja2 import Template
 from pydo import Client
+
+from testdjereo_deploy._types import CloudConfigEnv
 
 
 def configure_logging():
@@ -55,10 +58,11 @@ def get_wkid_from_tags(tags: list[str]) -> UUID | None:
     return UUID(uuid_tags[0].split(":")[1])
 
 
-def load_cloud_config(name: str) -> str:
+def render_cloud_config(name: str, env_vars: CloudConfigEnv) -> str:
     """Return the plain-text contents of a cloud-config YAML file, ready to be passed to
     the body of a `client.droplets.create()` call (ie. a DropletRequest object).
     """
     PACKAGE_ROOT = Path(__file__).resolve().parent
-    path = PACKAGE_ROOT / "infra" / "cloud-config" / f"{name}.yaml"
-    return path.read_text(encoding="utf-8")
+    template_path = PACKAGE_ROOT / "infra" / "cloud-config" / f"{name}.yaml.jinja"
+    template_text = template_path.read_text(encoding="utf-8")
+    return Template(template_text).render(**env_vars.as_dict())
