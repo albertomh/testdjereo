@@ -1,10 +1,11 @@
 #cloud-config
 
 # <https://cloudinit.readthedocs.io/en/latest/>
-# <https://www.digitalocean.com/community/tutorials/an-introduction-to-cloud-config-scripting>
-# <https://gist.github.com/dazeb/fde301b5035e8af3b040c6109c3d8170>
 
-hostname: app_server
+# Usage:
+#   The following environment variables must be provided as
+
+hostname: db_server
 # fqdn: example-host.example.com
 # manage_etc_hosts: true
 
@@ -18,24 +19,20 @@ swap:
 
 groups:
   - admin
-  - docker
 
 users:
   - name: admin
-    groups: [admin, docker]
+    groups: admin
     shell: /bin/bash
+    # TODO: pass via field on PostgresServerEnv instead of hardcoding!
     ssh-authorized-keys:
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF3qFAWvXdBQT/KkyfYZ3vliPkrDrw119kzOLUEooBms bertillo@MTYYVLQ6X2.local
 
-system_info:
-  default_user:
-    groups: [docker]
-
 apt:
   sources:
-    docker.list:
-      source: deb [arch=amd64] https://download.docker.com/linux/debian $RELEASE stable
-      keyid: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+    pgdg.list:
+      source: deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt $RELEASE-pgdg main
+      keyid: ACCC4CF8
 
 package_update: true
 package_upgrade: true
@@ -44,36 +41,27 @@ package_reboot_if_required: true
 unattended_upgrades:
   enable: true
   automatic_reboot: true
-  automatic_reboot_time: "02:00"
+  automatic_reboot_time: "03:00"
   origin_patterns:
     - 'origin=Debian,codename=$RELEASE,label=Debian-Security'
 
 packages:
-  - apt-transport-https
   - ca-certificates
-  - containerd.io
   - curl
-  - docker-ce
-  - docker-ce-cli
   - fail2ban
   - git
-  - gnupg-agent
-  - software-properties-common
+  - gnupg
+  - lsb-release
+  - postgresql
+  - postgresql-contrib
   - ufw
-  - unattended-upgrades
   - vim
 
 write_files:
-  # fine-tune swap behaviour for swapfile created elsewhere
   - path: /etc/sysctl.d/99-swap.conf
     content: |
       vm.swappiness=10
       vm.vfs_cache_pressure=50
-  # enable ipv4 forwarding, required on CIS hardened machines
-  - path: /etc/sysctl.d/enabled_ipv4_forwarding.conf
-    content: |
-      net.ipv4.ip_forward=1
-      net.ipv4.conf.all.forwarding=1
   - path: /etc/ssh/sshd_config.d/99-hardening.conf
     content: |
       PermitRootLogin no
@@ -92,18 +80,44 @@ write_files:
       bantime = 1h
       findtime = 10m
       maxretry = 5
+  # postgres network and auth hardening
+  - path: /etc/postgresql/18/main/postgresql.conf
+    append: true
+    content: |
+      listen_addresses = '*'
+      password_encryption = scram-sha-256
+      log_line_prefix = '%m [%p] %q%u@%d '
 
 runcmd:
   - ufw allow 22/tcp
-  - ufw allow 80/tcp
-  - ufw allow 443/tcp
-  # `lo`: loopback
   - ufw allow in on lo
   - ufw allow out on lo
   - ufw --force enable
 
   - systemctl enable fail2ban
   - systemctl start fail2ban
+
+  - chown -R postgres:postgres /etc/postgresql
+  - chown -R postgres:postgres /var/lib/postgresql
+  - chown -R postgres:adm /var/log/postgresql
+  - systemctl enable postgresql
+  - systemctl restart postgresql
+  - |
+    sudo -u postgres psql <<'SQL'
+    DO
+    $do$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT FROM pg_roles WHERE rolname = '{{ postgres_user }}'
+      ) THEN
+        CREATE ROLE {{ postgres_user }} LOGIN PASSWORD '{{ postgres_password }}';
+        ALTER ROLE {{ postgres_user }} CREATEDB;
+      END IF;
+    END
+    $do$;
+
+    CREATE DATABASE {{ postgres_db }} OWNER {{ postgres_user }};
+    SQL
 
 # disable root SSH login and password authentication for SSH
 ssh_pwauth: false
@@ -113,6 +127,6 @@ final_message: "cloud-init completed at $TIMESTAMP after $UPTIME seconds"
 
 power_state:
   mode: reboot
-  message: Rebooting after initial setup
+  message: Rebooting after PostgreSQL setup
   timeout: 30
   condition: True
