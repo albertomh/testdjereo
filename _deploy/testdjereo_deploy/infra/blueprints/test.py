@@ -1,10 +1,16 @@
 from enum import Enum
 from uuid import UUID
 
+from testdjereo_deploy._consts import SSH_KEYS
 from testdjereo_deploy._types import (
+    DORegion,
+    DropletImage,
+    DropletRequest,
+    DropletSize,
     Environment,
     EnvironmentBlueprint,
 )
+from testdjereo_deploy._utils import load_cloud_config
 
 
 class WELL_KNOWN_UUIDS(Enum):
@@ -16,5 +22,28 @@ BLUEPRINT = EnvironmentBlueprint(
     #
     environment=Environment.TEST,
     #
-    droplets=[],
+    droplets=[
+        # DropletRequest(
+        #     name="webapp",
+        #     region=DORegion.LONDON1,
+        #     size=DropletSize.BASIC_YOCTO,
+        #     image=DropletImage.DEBIAN_13_X64,
+        #     ssh_keys=[SSH_KEYS.id_ed25519],
+        #     tags=[],
+        #     user_data=load_cloud_config("app_server"),
+        #     vpc_uuid="",
+        #     well_known_uuid=WELL_KNOWN_UUIDS.APP_1.value,
+        # ),
+        DropletRequest(
+            name="db",
+            region=DORegion.LONDON1,
+            size=DropletSize.BASIC_YOCTO,
+            image=DropletImage.DEBIAN_13_X64,
+            ssh_keys=[SSH_KEYS.id_ed25519],
+            tags=[],
+            user_data=load_cloud_config("postgres_server"),
+            vpc_uuid="",
+            well_known_uuid=WELL_KNOWN_UUIDS.DB_1.value,
+        ),
+    ],
 )

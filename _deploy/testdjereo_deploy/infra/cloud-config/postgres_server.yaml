@@ -1,0 +1,103 @@
+#cloud-config
+
+# <https://cloudinit.readthedocs.io/en/latest/>
+
+hostname: db_server
+# fqdn: example-host.example.com
+# manage_etc_hosts: true
+
+timezone: "Etc/UTC"
+locale: "en_US.UTF-8"
+
+swap:
+  filename: /swapfile
+  size: "1G"
+  maxsize: "2G"
+
+users:
+  - name: admin
+    groups: sudo
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) ALL']
+    ssh-authorized-keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF3qFAWvXdBQT/KkyfYZ3vliPkrDrw119kzOLUEooBms bertillo@MTYYVLQ6X2.local
+
+apt:
+  sources:
+    pgdg.list:
+      source: deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt $RELEASE-pgdg main
+      keyid: ACCC4CF8
+
+package_update: true
+package_upgrade: true
+package_reboot_if_required: true
+
+unattended_upgrades:
+  enable: true
+  automatic_reboot: true
+  automatic_reboot_time: "03:00"
+  origin_patterns:
+    - 'origin=Debian,codename=$RELEASE,label=Debian-Security'
+
+packages:
+  - ca-certificates
+  - curl
+  - fail2ban
+  - git
+  - gnupg
+  - lsb-release
+  - postgresql
+  - postgresql-contrib
+  - ufw
+  - vim
+
+write_files:
+  - path: /etc/sysctl.d/99-swap.conf
+    content: |
+      vm.swappiness=10
+      vm.vfs_cache_pressure=50
+  - path: /etc/ssh/sshd_config.d/99-hardening.conf
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      X11Forwarding no
+      ClientAliveInterval 300
+      ClientAliveCountMax 2
+  - path: /etc/fail2ban/jail.local
+    content: |
+      [sshd]
+      enabled = true
+      bantime = 1h
+      findtime = 10m
+      maxretry = 5
+  # postgres network and auth hardening
+  - path: /etc/postgresql/18/main/postgresql.conf
+    append: true
+    content: |
+      listen_addresses = '*'
+      password_encryption = scram-sha-256
+      log_line_prefix = '%m [%p] %q%u@%d '
+
+runcmd:
+  - ufw allow 22/tcp
+  - ufw allow in on lo
+  - ufw allow out on lo
+  - ufw --force enable
+
+  - systemctl enable fail2ban
+  - systemctl start fail2ban
+
+  - systemctl enable postgresql
+  - systemctl restart postgresql
+
+# disable root SSH login and password authentication for SSH
+ssh_pwauth: false
+disable_root: true
+
+final_message: "cloud-init completed at $TIMESTAMP after $UPTIME seconds"
+
+power_state:
+  mode: reboot
+  message: Rebooting after PostgreSQL setup
+  timeout: 30
+  condition: True

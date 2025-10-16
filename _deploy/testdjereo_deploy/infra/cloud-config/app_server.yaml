@@ -4,17 +4,17 @@
 # <https://www.digitalocean.com/community/tutorials/an-introduction-to-cloud-config-scripting>
 # <https://gist.github.com/dazeb/fde301b5035e8af3b040c6109c3d8170>
 
-# hostname: example-host
+hostname: app_server
 # fqdn: example-host.example.com
 # manage_etc_hosts: true
+
+timezone: "Etc/UTC"
+locale: "en_US.UTF-8"
 
 swap:
   filename: /swapfile
   size: "1G"
   maxsize: "2G"
-
-timezone: "Etc/UTC"
-locale: "en_US.UTF-8"
 
 groups:
   - docker
@@ -40,27 +40,28 @@ apt:
 package_update: true
 package_upgrade: true
 package_reboot_if_required: true
+
 unattended_upgrades:
   enable: true
   automatic_reboot: true
   automatic_reboot_time: "02:00"
   origin_patterns:
-    - 'origin=Debian,codename=${distro_codename},label=Debian-Security'
+    - 'origin=Debian,codename=$RELEASE,label=Debian-Security'
 
 packages:
   - apt-transport-https
   - ca-certificates
+  - containerd.io
   - curl
-  - gnupg-agent
-  - software-properties-common
-  - unattended-upgrades
   - docker-ce
   - docker-ce-cli
-  - containerd.io
-  - ufw
   - fail2ban
-  - vim
   - git
+  - gnupg-agent
+  - software-properties-common
+  - ufw
+  - unattended-upgrades
+  - vim
 
 write_files:
   # fine-tune swap behaviour for swapfile created elsewhere
@@ -96,6 +97,7 @@ runcmd:
   - ufw allow in on lo
   - ufw allow out on lo
   - ufw --force enable
+
   - systemctl enable fail2ban
   - systemctl start fail2ban
 
