@@ -17,13 +17,13 @@ swap:
   maxsize: "2G"
 
 groups:
+  - admin
   - docker
 
 users:
   - name: admin
-    groups: sudo
+    groups: [admin, docker]
     shell: /bin/bash
-    sudo: ['ALL=(ALL) ALL']
     ssh-authorized-keys:
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF3qFAWvXdBQT/KkyfYZ3vliPkrDrw119kzOLUEooBms bertillo@MTYYVLQ6X2.local
 
@@ -81,6 +81,10 @@ write_files:
       X11Forwarding no
       ClientAliveInterval 300
       ClientAliveCountMax 2
+  - path: /etc/sudoers.d/90-admin-group-nopasswd
+    content: |
+      %admin ALL=(ALL) NOPASSWD:ALL
+    permissions: '0440'
   - path: /etc/fail2ban/jail.local
     content: |
       [sshd]

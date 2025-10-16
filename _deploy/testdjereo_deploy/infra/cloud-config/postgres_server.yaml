@@ -14,11 +14,13 @@ swap:
   size: "1G"
   maxsize: "2G"
 
+groups:
+  - admin
+
 users:
   - name: admin
-    groups: sudo
+    groups: admin
     shell: /bin/bash
-    sudo: ['ALL=(ALL) ALL']
     ssh-authorized-keys:
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF3qFAWvXdBQT/KkyfYZ3vliPkrDrw119kzOLUEooBms bertillo@MTYYVLQ6X2.local
 
@@ -63,6 +65,10 @@ write_files:
       X11Forwarding no
       ClientAliveInterval 300
       ClientAliveCountMax 2
+  - path: /etc/sudoers.d/90-admin-group-nopasswd
+    content: |
+      %admin ALL=(ALL) NOPASSWD:ALL
+    permissions: '0440'
   - path: /etc/fail2ban/jail.local
     content: |
       [sshd]
@@ -87,6 +93,9 @@ runcmd:
   - systemctl enable fail2ban
   - systemctl start fail2ban
 
+  - chown -R postgres:postgres /etc/postgresql
+  - chown -R postgres:postgres /var/lib/postgresql
+  - chown -R postgres:adm /var/log/postgresql
   - systemctl enable postgresql
   - systemctl restart postgresql
 
