@@ -114,6 +114,7 @@ class CloudConfigEnv:
 
 @dataclass(frozen=True)
 class PostgresServerEnv(CloudConfigEnv):
+    ssh_key_fingerprint: str
     postgres_db: str
     postgres_user: str
     postgres_password: str
@@ -121,11 +122,12 @@ class PostgresServerEnv(CloudConfigEnv):
 
 @dataclass(frozen=True)
 class AppServerEnv(CloudConfigEnv):
-    debug: str
-    secret_key: str
-    allowed_hosts: str
-    csrf_trusted_origins: str
-    database_url: str
+    ssh_key_fingerprint: str
+    app__debug: str
+    app__secret_key: str
+    app__allowed_hosts: str
+    app__csrf_trusted_origins: str
+    app__database_url: str
 
 
 # --- Application types ------------------------------------------------------------------

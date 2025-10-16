@@ -25,7 +25,7 @@ BLUEPRINT = EnvironmentBlueprint(
     #
     droplets=[
         # DropletRequest(
-        #     name="webapp",
+        #     name="webapp-f57cebc7",
         #     region=DORegion.LONDON1,
         #     size=DropletSize.BASIC_YOCTO,
         #     image=DropletImage.DEBIAN_13_X64,
@@ -36,7 +36,7 @@ BLUEPRINT = EnvironmentBlueprint(
         #     well_known_uuid=WELL_KNOWN_UUIDS.APP_1.value,
         # ),
         DropletRequest(
-            name="db",
+            name="db-6bd8663c",
             region=DORegion.LONDON1,
             size=DropletSize.BASIC_YOCTO,
             image=DropletImage.DEBIAN_13_X64,

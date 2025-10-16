@@ -23,10 +23,10 @@ groups:
 users:
   - name: admin
     groups: admin
+    sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
-    # TODO: pass via field on PostgresServerEnv instead of hardcoding!
-    ssh-authorized-keys:
-      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF3qFAWvXdBQT/KkyfYZ3vliPkrDrw119kzOLUEooBms bertillo@MTYYVLQ6X2.local
+    ssh_authorized_keys:
+      - {{ ssh_key_fingerprint }}
 
 apt:
   sources:
@@ -69,10 +69,10 @@ write_files:
       X11Forwarding no
       ClientAliveInterval 300
       ClientAliveCountMax 2
-  - path: /etc/sudoers.d/90-admin-group-nopasswd
-    content: |
-      %admin ALL=(ALL) NOPASSWD:ALL
-    permissions: '0440'
+  #- path: /etc/sudoers.d/90-admin-group-nopasswd
+  #  content: |
+  #    %admin ALL=(ALL) NOPASSWD:ALL
+  #  permissions: '0440'
   - path: /etc/fail2ban/jail.local
     content: |
       [sshd]

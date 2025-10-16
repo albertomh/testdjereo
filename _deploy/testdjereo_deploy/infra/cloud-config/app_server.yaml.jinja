@@ -23,10 +23,10 @@ groups:
 users:
   - name: admin
     groups: [admin, docker]
+    sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
-    # TODO: pass via field on AppServerEnv instead of hardcoding!
-    ssh-authorized-keys:
-      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF3qFAWvXdBQT/KkyfYZ3vliPkrDrw119kzOLUEooBms bertillo@MTYYVLQ6X2.local
+    ssh_authorized_keys:
+      - {{ ssh_key_fingerprint }}
 
 system_info:
   default_user:
@@ -82,10 +82,10 @@ write_files:
       X11Forwarding no
       ClientAliveInterval 300
       ClientAliveCountMax 2
-  - path: /etc/sudoers.d/90-admin-group-nopasswd
-    content: |
-      %admin ALL=(ALL) NOPASSWD:ALL
-    permissions: '0440'
+  # - path: /etc/sudoers.d/90-admin-group-nopasswd
+  #   content: |
+  #     %admin ALL=(ALL) NOPASSWD:ALL
+  #   permissions: '0440'
   - path: /etc/fail2ban/jail.local
     content: |
       [sshd]
@@ -105,6 +105,7 @@ runcmd:
 
   - systemctl enable fail2ban
   - systemctl start fail2ban
+  # TODO: use AppServerEnv's fields to populate env vars for Django app
 
 # disable root SSH login and password authentication for SSH
 ssh_pwauth: false
