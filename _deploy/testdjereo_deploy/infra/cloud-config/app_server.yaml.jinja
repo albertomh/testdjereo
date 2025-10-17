@@ -113,9 +113,16 @@ runcmd:
       Unattended-Upgrade::Automatic-Reboot-Time "02:00";
     EOF
 
+# - TODO: set up LetsEncrypt, autorenewal, etc.
+
   - apt autoremove -y
 
 # - TODO: use AppServerEnv's fields to populate env vars for Django app
+#APP__ALLOWED_HOSTS
+#APP__CSRF_TRUSTED_ORIGINS
+#APP__DATABASE_URL
+#APP__DEBUG
+#APP__SECRET_KEY
 
 # disable root SSH login and password authentication for SSH
 ssh_pwauth: false

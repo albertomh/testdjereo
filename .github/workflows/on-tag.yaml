@@ -5,14 +5,18 @@
 # The following click-ops steps must be taken to allow this action to succeed:
 #
 # Add the following GitHub Actions secrets via `github.com/albertomh/testdjereo/settings/secrets/actions`.
-# | secret_name         | content                                          |
-# | ------------------- | ------------------------------------------------ |
-# | SSH_PUBLIC_KEY      | public key to use for Droplet admin user         |
-# | DJANGO_SECRET_KEY   | random string >=50 characters long               |
-# | POSTGRES_USER       | [used to configure DB server]                    |
-# | POSTGRES_PASSWORD   | [used to configure DB server]                    |
-# | POSTGRES_DB         | [used to configure DB server]                    |
-# | DIGITALOCEAN_TOKEN  | <see below>                                      |
+# | secret_name               | content                                          |
+# | ------------------------- | ------------------------------------------------ |
+# | SSH_PUBLIC_KEY            | public key to use for Droplet admin user         |
+# | POSTGRES_USER             | [used to configure DB server]                    |
+# | POSTGRES_PASSWORD         | [used to configure DB server]                    |
+# | POSTGRES_DB               | [used to configure DB server]                    |
+# | APP__ALLOWED_HOSTS        | comma-separated list of IPs                      |
+# | APP__CSRF_TRUSTED_ORIGINS | FQDNs  |
+# | APP__DATABASE_URL         | eg. `postgresql://user:pwd@1.2.3.4:5432/dbname`  |
+# | APP__DEBUG                | 'true' or 'false' |
+# | APP__SECRET_KEY           | random string >=50 characters long               |
+# | DIGITALOCEAN_TOKEN        | <see below>                                      |
 #
 # 1. For the `DIGITALOCEAN_TOKEN`, mint a DO API token with scopes:
 #      - droplet: `create`, `update`, `delete`
@@ -48,7 +52,7 @@ jobs:
     with:
       django_checks_deploy: 'true'
     secrets:
-      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+      DJANGO_SECRET_KEY: ${{ secrets.APP__SECRET_KEY }}
 
   containerise:
     # needs:
@@ -81,10 +85,20 @@ jobs:
           enable-cache: true
       - name: Apply infra blueprint to 'test' environment
         env:
+          # Environment variables needed by `#cloud-config` YAML specs.
+          # common to both `postgres_server.yaml` & `app_server.yaml`
           SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+          # unique to `postgres_server.yaml`
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          # unique to `app_server.yaml`
+          APP__ALLOWED_HOSTS: ${{ secrets.APP__ALLOWED_HOSTS }}
+          APP__CSRF_TRUSTED_ORIGINS: ${{ secrets.APP__CSRF_TRUSTED_ORIGINS }}
+          APP__DATABASE_URL: ${{ secrets.APP__DATABASE_URL }}
+          APP__DEBUG: ${{ secrets.APP__DEBUG }}
+          APP__SECRET_KEY: ${{ secrets.APP__SECRET_KEY }}
+          # needed by `testdjereo_deploy.infra.apply`
           DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
         working-directory: ./_deploy/
         run: uv run python -m testdjereo_deploy.infra.apply test --no-dry-run
@@ -110,10 +124,20 @@ jobs:
           enable-cache: true
       - name: Plan infra blueprint changes for 'live' environment
         env:
+          # Environment variables needed by `#cloud-config` YAML specs.
+          # common to both `postgres_server.yaml` & `app_server.yaml`
           SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+          # unique to `postgres_server.yaml`
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          # unique to `app_server.yaml`
+          APP__ALLOWED_HOSTS: ${{ secrets.APP__ALLOWED_HOSTS }}
+          APP__CSRF_TRUSTED_ORIGINS: ${{ secrets.APP__CSRF_TRUSTED_ORIGINS }}
+          APP__DATABASE_URL: ${{ secrets.APP__DATABASE_URL }}
+          APP__DEBUG: ${{ secrets.APP__DEBUG }}
+          APP__SECRET_KEY: ${{ secrets.APP__SECRET_KEY }}
+          # needed by `testdjereo_deploy.infra.apply`
           DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
         working-directory: ./_deploy/
         run: uv run python -m testdjereo_deploy.infra.apply live
@@ -132,10 +156,20 @@ jobs:
           enable-cache: true
       - name: Apply infra blueprint to 'live' environment
         env:
+          # Environment variables needed by `#cloud-config` YAML specs.
+          # common to both `postgres_server.yaml` & `app_server.yaml`
           SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+          # unique to `postgres_server.yaml`
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          # unique to `app_server.yaml`
+          APP__ALLOWED_HOSTS: ${{ secrets.APP__ALLOWED_HOSTS }}
+          APP__CSRF_TRUSTED_ORIGINS: ${{ secrets.APP__CSRF_TRUSTED_ORIGINS }}
+          APP__DATABASE_URL: ${{ secrets.APP__DATABASE_URL }}
+          APP__DEBUG: ${{ secrets.APP__DEBUG }}
+          APP__SECRET_KEY: ${{ secrets.APP__SECRET_KEY }}
+          # needed by `testdjereo_deploy.infra.apply`
           DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
         working-directory: ./_deploy/
         run: uv run python -m testdjereo_deploy.infra.apply live --no-dry-run
