@@ -63,10 +63,6 @@ write_files:
       X11Forwarding no
       ClientAliveInterval 300
       ClientAliveCountMax 2
-  #- path: /etc/sudoers.d/90-admin-group-nopasswd
-  #  content: |
-  #    %admin ALL=(ALL) NOPASSWD:ALL
-  #  permissions: '0440'
   - path: /etc/fail2ban/jail.local
     content: |
       [sshd]
