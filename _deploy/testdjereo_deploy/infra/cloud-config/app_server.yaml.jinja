@@ -10,13 +10,16 @@
 # | env_variable        | content                                          |
 # | ------------------- | ------------------------------------------------ |
 # | SSH_PUBLIC_KEY      | public key to use for Droplet admin user         |
+#
+# Validate this file with `sudo cloud-init schema --config-file app_server.yaml`
+#
+# To debug installation, see `/var/log/cloud-init-output.log` in the VPS.
 
 hostname: app_server
 # fqdn: example-host.example.com
 # manage_etc_hosts: true
 
 timezone: "Etc/UTC"
-locale: "en_US.UTF-8"
 
 swap:
   filename: /swapfile
@@ -33,34 +36,22 @@ users:
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
     ssh_authorized_keys:
-      - {{ ssh_public_key }}
-
-system_info:
-  default_user:
-    groups: [docker]
+      - "{{ ssh_public_key }}"
 
 apt:
   sources:
     docker.list:
-      source: deb [arch=amd64] https://download.docker.com/linux/debian $RELEASE stable
+      source: deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable
       keyid: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
 
 package_update: true
 package_upgrade: true
 package_reboot_if_required: true
 
-unattended_upgrades:
-  enable: true
-  automatic_reboot: true
-  automatic_reboot_time: "02:00"
-  origin_patterns:
-    - 'origin=Debian,codename=$RELEASE,label=Debian-Security'
-
 packages:
   - apt-transport-https
   - ca-certificates
   - containerd.io
-  - curl
   - docker-ce
   - docker-ce-cli
   - fail2ban
@@ -112,7 +103,19 @@ runcmd:
 
   - systemctl enable fail2ban
   - systemctl start fail2ban
-  # TODO: use AppServerEnv's fields to populate env vars for Django app
+
+  - |
+    cat > /etc/apt/apt.conf.d/52unattended-upgrades-local <<EOF
+      Unattended-Upgrade::Allowed-Origins {
+        "origin=Debian,codename=$(lsb_release -cs),label=Debian-Security";
+      };
+      Unattended-Upgrade::Automatic-Reboot "true";
+      Unattended-Upgrade::Automatic-Reboot-Time "02:00";
+    EOF
+
+  - apt autoremove -y
+
+# - TODO: use AppServerEnv's fields to populate env vars for Django app
 
 # disable root SSH login and password authentication for SSH
 ssh_pwauth: false

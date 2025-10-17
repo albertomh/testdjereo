@@ -3,13 +3,13 @@ from uuid import UUID
 
 from testdjereo_deploy._consts import SSH_KEYS
 from testdjereo_deploy._types import (
+    AppServerEnv,
     DORegion,
     DropletImage,
     DropletRequest,
     DropletSize,
     Environment,
     EnvironmentBlueprint,
-    PostgresServerEnv,
 )
 from testdjereo_deploy._utils import render_cloud_config
 
@@ -24,29 +24,29 @@ BLUEPRINT = EnvironmentBlueprint(
     environment=Environment.TEST,
     #
     droplets=[
-        # DropletRequest(
-        #     name="webapp-f57cebc7",
-        #     region=DORegion.LONDON1,
-        #     size=DropletSize.BASIC_YOCTO,
-        #     image=DropletImage.DEBIAN_13_X64,
-        #     ssh_keys=[SSH_KEYS.id_ed25519],
-        #     tags=[],
-        #     user_data=render_cloud_config("app_server"),
-        #     vpc_uuid="",
-        #     well_known_uuid=WELL_KNOWN_UUIDS.APP_1.value,
-        # ),
         DropletRequest(
-            name="db-6bd8663c",
+            name="webapp-f57cebc7",
             region=DORegion.LONDON1,
             size=DropletSize.BASIC_YOCTO,
             image=DropletImage.DEBIAN_13_X64,
             ssh_keys=[SSH_KEYS.id_ed25519],
             tags=[],
-            user_data=render_cloud_config(
-                "postgres_server", PostgresServerEnv.from_env()
-            ),
+            user_data=render_cloud_config("app_server", AppServerEnv.from_env()),
             vpc_uuid="",
-            well_known_uuid=WELL_KNOWN_UUIDS.DB_1.value,
+            well_known_uuid=WELL_KNOWN_UUIDS.APP_1.value,
         ),
+        # DropletRequest(
+        #    name="db-6bd8663c",
+        #    region=DORegion.LONDON1,
+        #    size=DropletSize.BASIC_YOCTO,
+        #    image=DropletImage.DEBIAN_13_X64,
+        #    ssh_keys=[SSH_KEYS.id_ed25519],
+        #    tags=[],
+        #    user_data=render_cloud_config(
+        #        "postgres_server", PostgresServerEnv.from_env()
+        #    ),
+        #    vpc_uuid="",
+        #    well_known_uuid=WELL_KNOWN_UUIDS.DB_1.value,
+        # ),
     ],
 )

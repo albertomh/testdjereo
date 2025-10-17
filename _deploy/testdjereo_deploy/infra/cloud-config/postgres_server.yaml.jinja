@@ -11,57 +11,43 @@
 # | POSTGRES_USER       | [used to configure DB server]                    |
 # | POSTGRES_PASSWORD   | [used to configure DB server]                    |
 # | POSTGRES_DB         | [used to configure DB server]                    |
+#
+# Validate this file with `sudo cloud-init schema --config-file postgres_server.yaml`
+#
+# To debug installation, see `/var/log/cloud-init-output.log` in the VPS.
 
 hostname: db_server
 # fqdn: example-host.example.com
 # manage_etc_hosts: true
 
 timezone: "Etc/UTC"
-locale: "en_US.UTF-8"
 
 swap:
   filename: /swapfile
   size: "1G"
   maxsize: "2G"
 
-groups:
-  - admin
-
 users:
   - default
   - name: admin
-    groups: admin
+    groups: adm, sudo
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
+    lock_passwd: true
     ssh_authorized_keys:
       - "{{ ssh_public_key }}"
-
-apt:
-  sources:
-    pgdg.list:
-      source: deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt $RELEASE-pgdg main
-      keyid: ACCC4CF8
 
 package_update: true
 package_upgrade: true
 package_reboot_if_required: true
 
-unattended_upgrades:
-  enable: true
-  automatic_reboot: true
-  automatic_reboot_time: "03:00"
-  origin_patterns:
-    - 'origin=Debian,codename=$RELEASE,label=Debian-Security'
-
 packages:
   - ca-certificates
-  - curl
+  - unattended-upgrades
   - fail2ban
   - git
   - gnupg
   - lsb-release
-  - postgresql
-  - postgresql-contrib
   - ufw
   - vim
 
@@ -72,8 +58,8 @@ write_files:
       vm.vfs_cache_pressure=50
   - path: /etc/ssh/sshd_config.d/99-hardening.conf
     content: |
-      PermitRootLogin no
-      PasswordAuthentication no
+      PermitRootLogin yes
+      PasswordAuthentication yes
       X11Forwarding no
       ClientAliveInterval 300
       ClientAliveCountMax 2
@@ -96,8 +82,12 @@ write_files:
       password_encryption = scram-sha-256
       log_line_prefix = '%m [%p] %q%u@%d '
 
+# runs only on first boot
 runcmd:
+  - echo 'root:password' | chpasswd
+
   - ufw allow 22/tcp
+  - ufw allow 5432/tcp
   - ufw allow in on lo
   - ufw allow out on lo
   - ufw --force enable
@@ -105,28 +95,48 @@ runcmd:
   - systemctl enable fail2ban
   - systemctl start fail2ban
 
-  - chown -R postgres:postgres /etc/postgresql
-  - chown -R postgres:postgres /var/lib/postgresql
-  - chown -R postgres:adm /var/log/postgresql
+  - |
+    cat > /etc/apt/apt.conf.d/52unattended-upgrades-local <<EOF
+      Unattended-Upgrade::Allowed-Origins {
+        "origin=Debian,codename=$(lsb_release -cs),label=Debian-Security";
+      };
+      Unattended-Upgrade::Automatic-Reboot "true";
+      Unattended-Upgrade::Automatic-Reboot-Time "03:00";
+    EOF
+
+  - |
+    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+    | gpg --dearmor --output /usr/share/keyrings/postgresql-archive-keyring.gpg
+  - chmod 0444 /usr/share/keyrings/postgresql-archive-keyring.gpg
+  - |
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+    > /etc/apt/sources.list.d/pgdg.list
+  - chmod 0444 /etc/apt/sources.list.d/pgdg.list
+  - apt-get update
+  - apt-get install postgresql-18 postgresql-client-18 -y
+  # drop default postgres cluster (NB. don't use `pg_dropcluster`)
+  -  rm -rf /etc/postgresql/18/main /var/lib/postgresql/18/main
+  - pg_createcluster --start 18 main
+  - sed -i "s/^#listen_addresses =.*/listen_addresses = '*'/" /etc/postgresql/18/main/postgresql.conf
+  # TODO: can tighten up by replacing `0.0.0.0/0` with `<app_server_ip>/32`
+  - echo 'host all all 0.0.0.0/0 scram-sha-256' >> /etc/postgresql/18/main/pg_hba.conf
   - systemctl enable postgresql
   - systemctl restart postgresql
   - |
-    sudo -u postgres psql <<'SQL'
-    DO
-    $do$
+    sudo -u postgres psql <<'PGSQL'
+    DO $$
     BEGIN
-      IF NOT EXISTS (
-        SELECT FROM pg_roles WHERE rolname = '{{ postgres_user }}'
-      ) THEN
+      IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ postgres_user }}') THEN
         CREATE ROLE {{ postgres_user }} LOGIN PASSWORD '{{ postgres_password }}';
         ALTER ROLE {{ postgres_user }} CREATEDB;
       END IF;
-    END
-    $do$;
+    END $$;
+    PGSQL
+  - sudo -u postgres createdb -O {{ postgres_user }} {{ postgres_db }}
 
-    CREATE DATABASE {{ postgres_db }} OWNER {{ postgres_user }};
-    SQL
+  - apt autoremove -y
 
+ssh_pwauth: false
 disable_root: true
 
 final_message: "cloud-init completed at $TIMESTAMP after $UPTIME seconds"
