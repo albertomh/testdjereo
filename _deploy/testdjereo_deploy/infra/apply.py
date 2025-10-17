@@ -80,14 +80,14 @@ def manage_droplets(
 ):
     actual_droplets_res: DropletListResponse = client.droplets.list(tag_name=env.tag)
     actual_droplets: list[DropletResponse] = actual_droplets_res["droplets"]
-    future_droplets: list[DropletRequest] = copy.deepcopy(blueprint_droplets)
+    needed_droplets: list[DropletRequest] = copy.deepcopy(blueprint_droplets)
     actual_droplet_uuids = {get_wkid_from_tags(d["tags"]) for d in actual_droplets}
-    future_droplet_uuids = {get_wkid_from_tags(d["tags"]) for d in future_droplets}
-    # droplet_count = actual_droplets["meta"]["total"] - len(future_droplets)
+    needed_droplet_uuids = {get_wkid_from_tags(d["tags"]) for d in needed_droplets}
+    # droplet_count = actual_droplets["meta"]["total"] - len(needed_droplets)
 
-    existing = actual_droplet_uuids & future_droplet_uuids
-    to_create = future_droplet_uuids - actual_droplet_uuids
-    to_destroy = actual_droplet_uuids - future_droplet_uuids
+    existing = actual_droplet_uuids & needed_droplet_uuids
+    to_create = needed_droplet_uuids - actual_droplet_uuids
+    to_destroy = actual_droplet_uuids - needed_droplet_uuids
 
     LOGGER.info(
         "Droplet comparison",
@@ -115,8 +115,14 @@ def manage_droplets(
             LOGGER.info("Created Droplet", wkid=str(wkid), id=res["droplet"]["id"])
 
     if to_create:
-        LOGGER.info("Droplets to create", uuids=[str(id) for id in to_create])
-        for droplet_req in future_droplets:
+        droplets_to_create = [
+            d for d in needed_droplets if d["well_known_uuid"] in to_create
+        ]
+        LOGGER.info(
+            "Droplets to create",
+            droplets={d["name"]: str(d["well_known_uuid"]) for d in droplets_to_create},
+        )
+        for droplet_req in droplets_to_create:
             redacted_droplet = {
                 k: (v if k != "user_data" else "***REDACTED***")
                 for k, v in droplet_req.items()
@@ -139,9 +145,20 @@ def manage_droplets(
             LOGGER.info("Destroyed Droplet", wkid=str(wkid), id=droplet_id)
 
     if to_destroy:
-        LOGGER.info("Droplets to destroy", uuids=[str(id) for id in to_destroy])
-        if not is_dry_run:
-            for droplet in actual_droplets:
+        droplets_to_destroy = [
+            d for d in actual_droplets if get_wkid_from_tags(d["tags"]) in to_destroy
+        ]
+        LOGGER.info(
+            "Droplets to destroy",
+            droplets={
+                d["name"]: str(get_wkid_from_tags(d["tags"])) for d in droplets_to_destroy
+            },
+        )
+        for droplet in droplets_to_destroy:
+            if is_dry_run:
+                print("Would destroy Droplet:")  # noqa: T201
+                pprint.pp(droplet)
+            else:
                 wkid = get_wkid_from_tags(droplet["tags"])
                 if wkid in to_destroy:
                     _destroy_droplet(droplet["id"])
