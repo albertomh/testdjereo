@@ -16,7 +16,7 @@
 #
 # To debug installation, see `/var/log/cloud-init-output.log` in the VPS.
 
-hostname: db_server
+hostname: dbserver
 # fqdn: example-host.example.com
 # manage_etc_hosts: true
 
@@ -110,6 +110,7 @@ runcmd:
   - chmod 0444 /etc/apt/sources.list.d/pgdg.list
   - apt-get update
   - apt-get install postgresql-18 postgresql-client-18 -y
+
   # drop default postgres cluster (NB. don't use `pg_dropcluster`)
   -  rm -rf /etc/postgresql/18/main /var/lib/postgresql/18/main
   - pg_createcluster --start 18 main
