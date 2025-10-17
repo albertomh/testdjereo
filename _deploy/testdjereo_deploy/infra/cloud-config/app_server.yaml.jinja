@@ -4,6 +4,13 @@
 # <https://www.digitalocean.com/community/tutorials/an-introduction-to-cloud-config-scripting>
 # <https://gist.github.com/dazeb/fde301b5035e8af3b040c6109c3d8170>
 
+# Note: this is a Jinja2 template!
+# Usage:
+#   The following environment variables must be interpolated with this template:
+# | env_variable        | content                                          |
+# | ------------------- | ------------------------------------------------ |
+# | ssh_key_fingerprint | fingerprint of key to use for Droplet admin user |
+
 hostname: app_server
 # fqdn: example-host.example.com
 # manage_etc_hosts: true

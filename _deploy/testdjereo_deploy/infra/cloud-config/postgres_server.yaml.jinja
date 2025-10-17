@@ -2,8 +2,15 @@
 
 # <https://cloudinit.readthedocs.io/en/latest/>
 
+# Note: this is a Jinja2 template!
 # Usage:
-#   The following environment variables must be provided as
+#   The following environment variables must be interpolated with this template:
+# | env_variable        | content                                          |
+# | ------------------- | ------------------------------------------------ |
+# | ssh_key_fingerprint | fingerprint of key to use for Droplet admin user |
+# | postgres_user       | [used to configure DB server]                    |
+# | postgres_password   | [used to configure DB server]                    |
+# | postgres_db         | [used to configure DB server]                    |
 
 hostname: db_server
 # fqdn: example-host.example.com
@@ -64,8 +71,8 @@ write_files:
       vm.vfs_cache_pressure=50
   - path: /etc/ssh/sshd_config.d/99-hardening.conf
     content: |
-      PermitRootLogin no
-      PasswordAuthentication no
+      PermitRootLogin yes
+      PasswordAuthentication yes
       X11Forwarding no
       ClientAliveInterval 300
       ClientAliveCountMax 2
@@ -89,6 +96,8 @@ write_files:
       log_line_prefix = '%m [%p] %q%u@%d '
 
 runcmd:
+  - echo 'root:password' | chpasswd
+
   - ufw allow 22/tcp
   - ufw allow in on lo
   - ufw allow out on lo
@@ -120,8 +129,8 @@ runcmd:
     SQL
 
 # disable root SSH login and password authentication for SSH
-ssh_pwauth: false
-disable_root: true
+ssh_pwauth: true
+disable_root: false
 
 final_message: "cloud-init completed at $TIMESTAMP after $UPTIME seconds"
 
