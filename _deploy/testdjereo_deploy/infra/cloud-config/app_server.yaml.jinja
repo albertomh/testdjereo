@@ -9,7 +9,7 @@
 #   The following environment variables must be interpolated with this template:
 # | env_variable        | content                                          |
 # | ------------------- | ------------------------------------------------ |
-# | ssh_key_fingerprint | fingerprint of key to use for Droplet admin user |
+# | SSH_PUBLIC_KEY      | public key to use for Droplet admin user         |
 
 hostname: app_server
 # fqdn: example-host.example.com
@@ -33,7 +33,7 @@ users:
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
     ssh_authorized_keys:
-      - {{ ssh_key_fingerprint }}
+      - {{ ssh_public_key }}
 
 system_info:
   default_user:

@@ -7,7 +7,7 @@
 # Add the following GitHub Actions secrets via `github.com/albertomh/testdjereo/settings/secrets/actions`.
 # | secret_name         | content                                          |
 # | ------------------- | ------------------------------------------------ |
-# | SSH_KEY_FINGERPRINT | fingerprint of key to use for Droplet admin user |
+# | SSH_PUBLIC_KEY      | public key to use for Droplet admin user         |
 # | DJANGO_SECRET_KEY   | random string >=50 characters long               |
 # | POSTGRES_USER       | [used to configure DB server]                    |
 # | POSTGRES_PASSWORD   | [used to configure DB server]                    |
@@ -81,7 +81,7 @@ jobs:
           enable-cache: true
       - name: Apply infra blueprint to 'test' environment
         env:
-          SSH_KEY_FINGERPRINT: ${{ secrets.SSH_KEY_FINGERPRINT }}
+          SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
@@ -110,7 +110,7 @@ jobs:
           enable-cache: true
       - name: Plan infra blueprint changes for 'live' environment
         env:
-          SSH_KEY_FINGERPRINT: ${{ secrets.SSH_KEY_FINGERPRINT }}
+          SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
@@ -132,7 +132,7 @@ jobs:
           enable-cache: true
       - name: Apply infra blueprint to 'live' environment
         env:
-          SSH_KEY_FINGERPRINT: ${{ secrets.SSH_KEY_FINGERPRINT }}
+          SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}

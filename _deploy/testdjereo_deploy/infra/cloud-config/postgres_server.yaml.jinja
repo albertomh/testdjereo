@@ -7,10 +7,10 @@
 #   The following environment variables must be interpolated with this template:
 # | env_variable        | content                                          |
 # | ------------------- | ------------------------------------------------ |
-# | ssh_key_fingerprint | fingerprint of key to use for Droplet admin user |
-# | postgres_user       | [used to configure DB server]                    |
-# | postgres_password   | [used to configure DB server]                    |
-# | postgres_db         | [used to configure DB server]                    |
+# | SSH_PUBLIC_KEY      | public key to use for Droplet admin user         |
+# | POSTGRES_USER       | [used to configure DB server]                    |
+# | POSTGRES_PASSWORD   | [used to configure DB server]                    |
+# | POSTGRES_DB         | [used to configure DB server]                    |
 
 hostname: db_server
 # fqdn: example-host.example.com
@@ -28,12 +28,13 @@ groups:
   - admin
 
 users:
+  - default
   - name: admin
     groups: admin
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
     ssh_authorized_keys:
-      - {{ ssh_key_fingerprint }}
+      - "{{ ssh_public_key }}"
 
 apt:
   sources:
@@ -71,8 +72,8 @@ write_files:
       vm.vfs_cache_pressure=50
   - path: /etc/ssh/sshd_config.d/99-hardening.conf
     content: |
-      PermitRootLogin yes
-      PasswordAuthentication yes
+      PermitRootLogin no
+      PasswordAuthentication no
       X11Forwarding no
       ClientAliveInterval 300
       ClientAliveCountMax 2
@@ -96,8 +97,6 @@ write_files:
       log_line_prefix = '%m [%p] %q%u@%d '
 
 runcmd:
-  - echo 'root:password' | chpasswd
-
   - ufw allow 22/tcp
   - ufw allow in on lo
   - ufw allow out on lo
@@ -128,9 +127,7 @@ runcmd:
     CREATE DATABASE {{ postgres_db }} OWNER {{ postgres_user }};
     SQL
 
-# disable root SSH login and password authentication for SSH
-ssh_pwauth: true
-disable_root: false
+disable_root: true
 
 final_message: "cloud-init completed at $TIMESTAMP after $UPTIME seconds"
 
