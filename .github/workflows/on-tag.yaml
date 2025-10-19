@@ -71,7 +71,7 @@ jobs:
             ghcr.io/${{ env.REPO_NAME }}:latest,
             ghcr.io/${{ env.REPO_NAME }}:${{ github.ref_name }},
 
-  deploy_test:
+  apply_test:
     needs:
       - containerise
     runs-on: ubuntu-24.04
@@ -92,16 +92,25 @@ jobs:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          # unique to `app_server.yaml`
+          # needed by `testdjereo_deploy.infra.apply`
+          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+        working-directory: ./_deploy/
+        run: uv run python -m testdjereo_deploy.infra.apply test --no-dry-run
+
+  deploy_test:
+    needs:
+      - apply_test
+    runs-on: ubuntu-24.04
+    steps:
+      - shell: bash
+        env:
           APP__ALLOWED_HOSTS: ${{ secrets.APP__ALLOWED_HOSTS }}
           APP__CSRF_TRUSTED_ORIGINS: ${{ secrets.APP__CSRF_TRUSTED_ORIGINS }}
           APP__DATABASE_URL: ${{ secrets.APP__DATABASE_URL }}
           APP__DEBUG: ${{ secrets.APP__DEBUG }}
           APP__SECRET_KEY: ${{ secrets.APP__SECRET_KEY }}
-          # needed by `testdjereo_deploy.infra.apply`
-          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
-        working-directory: ./_deploy/
-        run: uv run python -m testdjereo_deploy.infra.apply test --no-dry-run
+        run: |
+            echo "TODO: deploy app to test!"
 
   health_test:
     needs:
@@ -131,18 +140,12 @@ jobs:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          # unique to `app_server.yaml`
-          APP__ALLOWED_HOSTS: ${{ secrets.APP__ALLOWED_HOSTS }}
-          APP__CSRF_TRUSTED_ORIGINS: ${{ secrets.APP__CSRF_TRUSTED_ORIGINS }}
-          APP__DATABASE_URL: ${{ secrets.APP__DATABASE_URL }}
-          APP__DEBUG: ${{ secrets.APP__DEBUG }}
-          APP__SECRET_KEY: ${{ secrets.APP__SECRET_KEY }}
           # needed by `testdjereo_deploy.infra.apply`
           DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
         working-directory: ./_deploy/
         run: uv run python -m testdjereo_deploy.infra.apply live
 
-  deploy_live:
+  apply_live:
     needs:
       - plan_live
     runs-on: ubuntu-24.04
@@ -163,16 +166,25 @@ jobs:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          # unique to `app_server.yaml`
+          # needed by `testdjereo_deploy.infra.apply`
+          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+        working-directory: ./_deploy/
+        run: uv run python -m testdjereo_deploy.infra.apply live --no-dry-run
+
+  deploy_live:
+    needs:
+      - apply_live
+    runs-on: ubuntu-24.04
+    steps:
+      - shell: bash
+        env:
           APP__ALLOWED_HOSTS: ${{ secrets.APP__ALLOWED_HOSTS }}
           APP__CSRF_TRUSTED_ORIGINS: ${{ secrets.APP__CSRF_TRUSTED_ORIGINS }}
           APP__DATABASE_URL: ${{ secrets.APP__DATABASE_URL }}
           APP__DEBUG: ${{ secrets.APP__DEBUG }}
           APP__SECRET_KEY: ${{ secrets.APP__SECRET_KEY }}
-          # needed by `testdjereo_deploy.infra.apply`
-          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
-        working-directory: ./_deploy/
-        run: uv run python -m testdjereo_deploy.infra.apply live --no-dry-run
+        run: |
+            echo "TODO: deploy app to live!"
 
   health_live:
     needs:
