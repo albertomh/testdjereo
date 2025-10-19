@@ -1,8 +1,8 @@
 from enum import Enum
 from uuid import UUID
 
-from testdjereo_deploy._consts import SSH_KEYS
-from testdjereo_deploy._types import (
+from testdjereo_deploy.infra._consts import SSH_KEYS
+from testdjereo_deploy.infra._types import (
     AppServerEnv,
     DORegion,
     DropletImage,
@@ -11,7 +11,7 @@ from testdjereo_deploy._types import (
     Environment,
     EnvironmentBlueprint,
 )
-from testdjereo_deploy._utils import render_cloud_config
+from testdjereo_deploy.infra._utils import render_cloud_config
 
 
 class WELL_KNOWN_UUIDS(Enum):

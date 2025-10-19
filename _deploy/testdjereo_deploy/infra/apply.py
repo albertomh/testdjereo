@@ -9,7 +9,8 @@ from types import ModuleType
 import structlog
 from pydo import Client as DO_Client
 
-from testdjereo_deploy._types import (
+from testdjereo_deploy._utils import configure_logging
+from testdjereo_deploy.infra._types import (
     DropletCreateResponse,
     DropletListResponse,
     DropletRequest,
@@ -17,7 +18,10 @@ from testdjereo_deploy._types import (
     Environment,
     EnvironmentBlueprint,
 )
-from testdjereo_deploy._utils import configure_logging, get_DO_client, get_wkid_from_tags
+from testdjereo_deploy.infra._utils import (
+    get_DO_client,
+    get_wkid_from_tags,
+)
 
 configure_logging()
 LOGGER = structlog.get_logger()

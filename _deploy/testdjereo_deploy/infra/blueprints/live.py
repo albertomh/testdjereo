@@ -2,8 +2,8 @@ from enum import Enum
 
 from testdjereo_deploy._types import (
     Environment,
-    EnvironmentBlueprint,
 )
+from testdjereo_deploy.infra._types import EnvironmentBlueprint
 
 
 class WELL_KNOWN_UUIDS(Enum):
