@@ -9,18 +9,20 @@ from types import ModuleType
 import structlog
 from pydo import Client as DO_Client
 
-from testdjereo_deploy._utils import configure_logging
-from testdjereo_deploy.infra._types import (
-    DropletCreateResponse,
-    DropletListResponse,
+from DO_deploy._utils import configure_logging
+from DO_deploy.infra._types import (
     DropletRequest,
-    DropletResponse,
     Environment,
     EnvironmentBlueprint,
 )
-from testdjereo_deploy.infra._utils import (
+from DO_deploy._utils import (
     get_DO_client,
     get_wkid_from_tags,
+)
+from DO_deploy._DO_types import (
+    DropletCreateResponse,
+    DropletListResponse,
+    DropletResponse,
 )
 
 configure_logging()
@@ -42,7 +44,7 @@ def load_environment_blueprint(env: Environment) -> EnvironmentBlueprint:
 
         return bp
 
-    import testdjereo_deploy.infra.env_blueprints as bp_pkg
+    import DO_deploy.infra.env_blueprints as bp_pkg
 
     env_blueprints = []
 
@@ -155,7 +157,8 @@ def manage_droplets(
         LOGGER.info(
             "Droplets to destroy",
             droplets={
-                d["name"]: str(get_wkid_from_tags(d["tags"])) for d in droplets_to_destroy
+                d["name"]: str(get_wkid_from_tags(d["tags"]))
+                for d in droplets_to_destroy
             },
         )
         for droplet in droplets_to_destroy:

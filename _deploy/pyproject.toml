@@ -11,3 +11,6 @@ dependencies = [
     "pydo>=0.17.0,<0.18.0",
     "structlog>=25.4.0,<26.0.0",
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"_deploy/**.py" = ["S603", "S607"]

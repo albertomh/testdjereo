@@ -1,9 +1,9 @@
 from enum import Enum
 
-from testdjereo_deploy._types import (
+from DO_deploy._types import (
     Environment,
 )
-from testdjereo_deploy.infra._types import EnvironmentBlueprint
+from DO_deploy.infra._types import EnvironmentBlueprint
 
 
 class WELL_KNOWN_UUIDS(Enum):

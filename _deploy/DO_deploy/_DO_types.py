@@ -1,11 +1,8 @@
-from dataclasses import dataclass
+# Digital Ocean-specific types
+
 from enum import StrEnum
-from typing import NotRequired, TypedDict
+from typing import Literal, NotRequired, TypedDict
 from uuid import UUID
-
-from testdjereo_deploy._types import Environment, EnvVarDataClass
-
-# --- Digital Ocean-specific types -------------------------------------------------------
 
 
 class MetaApiRes(TypedDict):
@@ -55,6 +52,21 @@ class DropletRequest(BaseDroplet):
     well_known_uuid: UUID
 
 
+IPVersion = Literal["v4", "v6"]
+
+
+class NetworkInfo(TypedDict):
+    ip_address: str
+    netmask: str
+    gateway: str
+    type: IPVersion
+
+
+class DropletNetworks(TypedDict):
+    v4: list[NetworkInfo]
+    v6: list[NetworkInfo]
+
+
 class DropletResponse(BaseDroplet):
     """
     <https://docs.digitalocean.com/reference/api/digitalocean/#tag/Droplets>
@@ -62,6 +74,7 @@ class DropletResponse(BaseDroplet):
 
     id: int
     created_at: str
+    networks: DropletNetworks
 
 
 class DropletCreateResponse(TypedDict):
@@ -73,24 +86,3 @@ class DropletListResponse(TypedDict):
     droplets: list[DropletResponse]
     links: dict
     meta: MetaApiRes
-
-
-# --- Application types ------------------------------------------------------------------
-
-
-class EnvironmentBlueprint(TypedDict):
-    environment: Environment
-    droplets: list[DropletRequest]
-
-
-@dataclass(frozen=True)
-class PostgresServerEnv(EnvVarDataClass):
-    ssh_public_key: str
-    postgres_db: str
-    postgres_user: str
-    postgres_password: str
-
-
-@dataclass(frozen=True)
-class AppServerEnv(EnvVarDataClass):
-    ssh_public_key: str

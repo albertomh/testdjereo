@@ -92,10 +92,10 @@ jobs:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          # needed by `testdjereo_deploy.infra.apply`
+          # needed by `DO_deploy.infra.apply`
           DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
         working-directory: ./_deploy/
-        run: uv run python -m testdjereo_deploy.infra.apply test --no-dry-run
+        run: uv run python -m DO_deploy.infra.apply test --no-dry-run
 
   deploy_test:
     needs:
@@ -140,10 +140,10 @@ jobs:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          # needed by `testdjereo_deploy.infra.apply`
+          # needed by `DO_deploy.infra.apply`
           DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
         working-directory: ./_deploy/
-        run: uv run python -m testdjereo_deploy.infra.apply live
+        run: uv run python -m DO_deploy.infra.apply live
 
   apply_live:
     needs:
@@ -166,10 +166,10 @@ jobs:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          # needed by `testdjereo_deploy.infra.apply`
+          # needed by `DO_deploy.infra.apply`
           DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
         working-directory: ./_deploy/
-        run: uv run python -m testdjereo_deploy.infra.apply live --no-dry-run
+        run: uv run python -m DO_deploy.infra.apply live --no-dry-run
 
   deploy_live:
     needs:
