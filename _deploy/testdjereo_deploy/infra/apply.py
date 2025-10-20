@@ -42,9 +42,9 @@ def load_environment_blueprint(env: Environment) -> EnvironmentBlueprint:
 
         return bp
 
-    import testdjereo_deploy.infra.blueprints as bp_pkg
+    import testdjereo_deploy.infra.env_blueprints as bp_pkg
 
-    blueprints = []
+    env_blueprints = []
 
     for module_info in pkgutil.iter_modules(bp_pkg.__path__):
         module_name = f"{bp_pkg.__name__}.{module_info.name}"
@@ -57,22 +57,22 @@ def load_environment_blueprint(env: Environment) -> EnvironmentBlueprint:
         bp = module.BLUEPRINT
 
         if bp["environment"] == env:
-            blueprints.append(bp)
+            env_blueprints.append(bp)
             LOGGER.info(
                 "Loaded blueprint",
                 module=module_name,
                 environment=bp["environment"].value,
             )
 
-    if not blueprints:
+    if not env_blueprints:
         raise RuntimeError(
-            f"No blueprints found for env:{env.value} in 'infra/blueprints/'"
+            f"No blueprints found for env:{env.value} in 'infra/env_blueprints/'"
         )
 
-    if len(blueprints) != 1:
+    if len(env_blueprints) != 1:
         raise ValueError(f"Multiple blueprints found for env:{env.value}")
 
-    bp = _tag_resources(blueprints[0])
+    bp = _tag_resources(env_blueprints[0])
     return bp
 
 

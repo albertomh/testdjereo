@@ -15,7 +15,7 @@ A Python package to
 
 ```sh
 # create a blueprint for an environment:
-cp infra/blueprints/_sample.py.txt infra/blueprints/test.py
+cp infra/env_blueprints/_sample.py.txt infra/env_blueprints/test.py
 # edit the contents of the test.py blueprint ...
 
 uv venv
