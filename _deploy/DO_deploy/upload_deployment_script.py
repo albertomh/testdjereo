@@ -7,7 +7,10 @@
 #   ```
 #
 # Prerequisites:
-#
+#   Binaries that should be available locally:
+#     - [ ] uv <https://docs.astral.sh/uv>
+#   Data that must be available to this script:
+#     - [ ] A Digital Ocean token stored in env. var. `$DIGITALOCEAN__TOKEN`
 
 import argparse
 import shlex
@@ -18,13 +21,12 @@ from pathlib import Path
 import structlog
 from pydo import Client as DO_Client
 
-from DO_deploy._DO_types import DropletListResponse, DropletResponse
 from DO_deploy._types import Environment
 from DO_deploy._utils import (
     configure_logging,
     get_DO_client,
-    get_public_ip,
 )
+from DO_deploy.list_droplet_IPs import get_droplet_ips_for_env
 
 # `_deploy/` ie. closest pyproject.toml
 PACKAGE_ROOT = Path(__file__).resolve().parent.parent
@@ -34,20 +36,18 @@ configure_logging()
 LOGGER = structlog.get_logger()
 
 
-def main(*, client: DO_Client, app_name: str, env: Environment, user: str):
-    droplets_res: DropletListResponse = client.droplets.list(tag_name=env.tag)
-    droplets: list[DropletResponse] = droplets_res["droplets"]
-
+def main(*, do_client: DO_Client, app_name: str, env: Environment, user: str):
     target_dir = f"/etc/{app_name}/_deploy/"
-    for d in droplets:
-        ip_v4_address = get_public_ip(d)
+
+    for wkid, ip in get_droplet_ips_for_env(do_client, env, "v4").items():
         try:
             subprocess.run(
                 [
                     "ssh",
+                    "-vvv",
                     "-o",
                     "StrictHostKeyChecking=no",
-                    f"{user}@{ip_v4_address}",
+                    f"{user}@{ip}",
                     "--",
                     "sudo",
                     "mkdir",
@@ -61,9 +61,15 @@ def main(*, client: DO_Client, app_name: str, env: Environment, user: str):
                 ],
                 check=True,
             )
-            LOGGER.info("created directory on host", target_dir=target_dir)
+            LOGGER.info(
+                "created directory on host", target_dir=target_dir, wkid=str(wkid)
+            )
         except subprocess.CalledProcessError:
-            LOGGER.error("failed to create directory on host", target_dir=target_dir)
+            LOGGER.error(
+                "failed to create directory on host",
+                target_dir=target_dir,
+                wkid=str(wkid),
+            )
             sys.exit(1)
 
         files_to_upload = [
@@ -79,7 +85,8 @@ def main(*, client: DO_Client, app_name: str, env: Environment, user: str):
             tar_cmd = ["tar", "czf", "-", *files_to_upload]
             ssh_cmd = [
                 "ssh",
-                f"{user}@{ip_v4_address}",
+                "-vvv",
+                f"{user}@{ip}",
                 f"mkdir -p {target_dir} && tar xzf - -C {target_dir}",
             ]
 
@@ -94,9 +101,12 @@ def main(*, client: DO_Client, app_name: str, env: Environment, user: str):
             LOGGER.info(
                 "used ssh & tar to upload files to host",
                 files_count=len(files_to_upload),
+                wkid=str(wkid),
             )
         except subprocess.CalledProcessError:
-            LOGGER.error("failed to scp files to host", target_dir=target_dir)
+            LOGGER.error(
+                "failed to scp files to host", target_dir=target_dir, wkid=str(wkid)
+            )
             sys.exit(1)
 
 
@@ -119,9 +129,9 @@ if __name__ == "__main__":
         help="User to log into the VPS as",
     )
     args = parser.parse_args()
-    env = args.env
     app_name = args.app_name
+    env = args.env
     user = args.user
 
-    client = get_DO_client()
-    main(client=client, app_name=app_name, env=env, user=user)
+    do_client = get_DO_client()
+    main(do_client=do_client, app_name=app_name, env=env, user=user)

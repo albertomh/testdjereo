@@ -20,7 +20,7 @@ cp infra/env_blueprints/_sample.py.txt infra/env_blueprints/test.py
 
 uv venv
 uv pip install -e .
-export DIGITALOCEAN_TOKEN=dop_v1_123...
+export DIGITALOCEAN__TOKEN=dop_v1_123...
 uv run python -m DO_deploy.infra.apply test [--no-dry-run]
 
 # upload the deployment module to the newly created Droplet(s)

@@ -84,6 +84,7 @@ def get_argument_parser() -> argparse.ArgumentParser:
         formatter_class=RawTextHelpFormatter,
     )
 
+    # arguments converted to more verbose names (`Args` dataclass) in main()
     parser.add_argument(
         "-u",
         "--ghcr-username",

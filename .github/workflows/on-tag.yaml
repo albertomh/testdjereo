@@ -17,9 +17,9 @@
 # | APP__DATABASE_URL         | eg. `postgresql://user:pwd@1.2.3.4:5432/dbname`  |
 # | APP__DEBUG                | 'true' or 'false' |
 # | APP__SECRET_KEY           | random string >=50 characters long               |
-# | DIGITALOCEAN_TOKEN        | <see below>                                      |
+# | DIGITALOCEAN__TOKEN        | <see below>                                      |
 #
-# 1. For the `DIGITALOCEAN_TOKEN`, mint a DO API token with scopes:
+# 1. For the `DIGITALOCEAN__TOKEN`, mint a DO API token with scopes:
 #      - droplet: `create`, `update`, `delete`
 #      - ssh_key: `read`
 #      - tag: `create`
@@ -93,7 +93,7 @@ jobs:
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
           # needed by `DO_deploy.infra.apply`
-          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+          DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
         working-directory: ./_deploy/
         run: uv run python -m DO_deploy.infra.apply test --no-dry-run
 
@@ -106,7 +106,8 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           version: "0.9.4"
-      - shell: bash
+      - name: Upload blue/green deployment script
+        shell: bash
         env:
           SSH__PRIVATE_KEY: ${{ secrets.SSH__PRIVATE_KEY }}
           SSH__PUBLIC_KEY: ${{ secrets.SSH__PUBLIC_KEY }}
@@ -115,13 +116,25 @@ jobs:
           APP__DATABASE_URL: ${{ secrets.APP__DATABASE_URL }}
           APP__DEBUG: ${{ secrets.APP__DEBUG }}
           APP__SECRET_KEY: ${{ secrets.APP__SECRET_KEY }}
-          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+          DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
+          GH__CR_USERNAME: ${{ secrets.GH__CR_USERNAME }}
+          GH__PAT: ${{ secrets.GH__PAT }}
+          WEBAPP__CONTAINER_IMAGE: ${{ secrets.WEBAPP__CONTAINER_IMAGE }}
+          WEBAPP__CONTAINER_NAME: ${{ secrets.WEBAPP__CONTAINER_NAME }}
         run: |
             mkdir -p ~/.ssh
             echo "$SSH__PRIVATE_KEY" > ~/.ssh/id_ed25519
             chmod 600 ~/.ssh/id_ed25519
             cd _deploy/
             uv run python -m DO_deploy.upload_deployment_script testdjereo test admin
+            uv run python -m DO_deploy.list_droplet_IPs test | \
+                xargs -r -n1 -I{} bash -c \
+                "ssh -t admin@{} 'cd /etc/testdjereo/_deploy/ && \
+                    uv run python -m DO_deploy.deploy.blue_green_deploy \
+                    -i \"${WEBAPP__CONTAINER_IMAGE}\" \
+                    -u \"${GH__CR_USERNAME}\" \
+                    -t \"${GH__PAT}\" \
+                    -n \"${WEBAPP__CONTAINER_NAME}\"'"
 
   health_test:
     needs:
@@ -151,7 +164,7 @@ jobs:
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
           # needed by `DO_deploy.infra.apply`
-          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+          DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
         working-directory: ./_deploy/
         run: uv run python -m DO_deploy.infra.apply live
 
@@ -176,7 +189,7 @@ jobs:
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
           # needed by `DO_deploy.infra.apply`
-          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+          DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
         working-directory: ./_deploy/
         run: uv run python -m DO_deploy.infra.apply live --no-dry-run
 

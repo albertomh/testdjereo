@@ -10,7 +10,7 @@ from DO_deploy._DO_types import DropletResponse, IPVersion
 
 
 def get_DO_token() -> str:
-    token_env_var = "DIGITALOCEAN_TOKEN"  # noqa: S105 hardcoded-password-string
+    token_env_var = "DIGITALOCEAN__TOKEN"  # noqa: S105 hardcoded-password-string
     token = os.getenv(token_env_var)
 
     if not token:
