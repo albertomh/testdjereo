@@ -47,8 +47,7 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         if: ${{ steps.release.outputs.prs_created == 'true' }}
         with:
-          version: "0.9.2"
-          enable-cache: true
+          version: "0.9.4"
       - run: uv lock
         if: ${{ steps.release.outputs.prs_created == 'true' }}
         shell: bash

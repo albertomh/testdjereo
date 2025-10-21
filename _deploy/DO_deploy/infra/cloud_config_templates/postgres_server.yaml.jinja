@@ -7,7 +7,7 @@
 #   The following environment variables must be interpolated with this template:
 # | env_variable        | content                                          |
 # | ------------------- | ------------------------------------------------ |
-# | SSH_PUBLIC_KEY      | public key to use for Droplet admin user         |
+# | SSH__PUBLIC_KEY     | public key to use for Droplet admin user         |
 # | POSTGRES_USER       | [used to configure DB server]                    |
 # | POSTGRES_PASSWORD   | [used to configure DB server]                    |
 # | POSTGRES_DB         | [used to configure DB server]                    |
@@ -35,7 +35,7 @@ users:
     shell: /bin/bash
     lock_passwd: true
     ssh_authorized_keys:
-      - "{{ ssh_public_key }}"
+      - "{{ ssh__public_key }}"
 
 package_update: true
 package_upgrade: true

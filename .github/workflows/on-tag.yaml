@@ -7,7 +7,8 @@
 # Add the following GitHub Actions secrets via `github.com/albertomh/testdjereo/settings/secrets/actions`.
 # | secret_name               | content                                          |
 # | ------------------------- | ------------------------------------------------ |
-# | SSH_PUBLIC_KEY            | public key to use for Droplet admin user         |
+# | SSH__PRIVATE_KEY          | private key to use for Droplet admin user        |
+# | SSH__PUBLIC_KEY           | public key to use for Droplet admin user         |
 # | POSTGRES_USER             | [used to configure DB server]                    |
 # | POSTGRES_PASSWORD         | [used to configure DB server]                    |
 # | POSTGRES_DB               | [used to configure DB server]                    |
@@ -81,13 +82,12 @@ jobs:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v7
         with:
-          version: "0.9.3"
-          enable-cache: true
+          version: "0.9.4"
       - name: Apply infra blueprint to 'test' environment
         env:
           # Environment variables needed by `#cloud-config` YAML specs.
           # common to both `postgres_server.yaml` & `app_server.yaml`
-          SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+          SSH__PUBLIC_KEY: ${{ secrets.SSH__PUBLIC_KEY }}
           # unique to `postgres_server.yaml`
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
@@ -102,15 +102,26 @@ jobs:
       - apply_test
     runs-on: ubuntu-24.04
     steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.4"
       - shell: bash
         env:
+          SSH__PRIVATE_KEY: ${{ secrets.SSH__PRIVATE_KEY }}
+          SSH__PUBLIC_KEY: ${{ secrets.SSH__PUBLIC_KEY }}
           APP__ALLOWED_HOSTS: ${{ secrets.APP__ALLOWED_HOSTS }}
           APP__CSRF_TRUSTED_ORIGINS: ${{ secrets.APP__CSRF_TRUSTED_ORIGINS }}
           APP__DATABASE_URL: ${{ secrets.APP__DATABASE_URL }}
           APP__DEBUG: ${{ secrets.APP__DEBUG }}
           APP__SECRET_KEY: ${{ secrets.APP__SECRET_KEY }}
+          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
         run: |
-            echo "TODO: deploy app to test!"
+            mkdir -p ~/.ssh
+            echo "$SSH__PRIVATE_KEY" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            cd _deploy/
+            uv run python -m DO_deploy.upload_deployment_script testdjereo test admin
 
   health_test:
     needs:
@@ -129,13 +140,12 @@ jobs:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v7
         with:
-          version: "0.9.3"
-          enable-cache: true
+          version: "0.9.4"
       - name: Plan infra blueprint changes for 'live' environment
         env:
           # Environment variables needed by `#cloud-config` YAML specs.
           # common to both `postgres_server.yaml` & `app_server.yaml`
-          SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+          SSH__PUBLIC_KEY: ${{ secrets.SSH__PUBLIC_KEY }}
           # unique to `postgres_server.yaml`
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
@@ -155,13 +165,12 @@ jobs:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v7
         with:
-          version: "0.9.3"
-          enable-cache: true
+          version: "0.9.4"
       - name: Apply infra blueprint to 'live' environment
         env:
           # Environment variables needed by `#cloud-config` YAML specs.
           # common to both `postgres_server.yaml` & `app_server.yaml`
-          SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+          SSH__PUBLIC_KEY: ${{ secrets.SSH__PUBLIC_KEY }}
           # unique to `postgres_server.yaml`
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
@@ -176,6 +185,10 @@ jobs:
       - apply_live
     runs-on: ubuntu-24.04
     steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.4"
       - shell: bash
         env:
           APP__ALLOWED_HOSTS: ${{ secrets.APP__ALLOWED_HOSTS }}

@@ -28,8 +28,7 @@ runs:
   steps:
     - uses: astral-sh/setup-uv@v7
       with:
-        version: "0.9.2"
-        enable-cache: true
+        version: "0.9.4"
     - uses: extractions/setup-just@v3
     - run: |
         if [[ "$DEPLOY" == "true" ]]; then

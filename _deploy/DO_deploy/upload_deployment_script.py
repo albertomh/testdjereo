@@ -45,6 +45,8 @@ def main(*, client: DO_Client, app_name: str, env: Environment, user: str):
             subprocess.run(
                 [
                     "ssh",
+                    "-o",
+                    "StrictHostKeyChecking=no",
                     f"{user}@{ip_v4_address}",
                     "--",
                     "sudo",

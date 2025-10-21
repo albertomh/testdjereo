@@ -12,7 +12,7 @@ class EnvironmentBlueprint(TypedDict):
 
 @dataclass(frozen=True)
 class PostgresServerEnv(EnvVarDataClass):
-    ssh_public_key: str
+    ssh__public_key: str
     postgres_db: str
     postgres_user: str
     postgres_password: str
@@ -20,4 +20,4 @@ class PostgresServerEnv(EnvVarDataClass):
 
 @dataclass(frozen=True)
 class AppServerEnv(EnvVarDataClass):
-    ssh_public_key: str
+    ssh__public_key: str
