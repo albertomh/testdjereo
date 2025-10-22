@@ -126,6 +126,13 @@ jobs:
             echo "$SSH__PRIVATE_KEY" > ~/.ssh/id_ed25519
             chmod 600 ~/.ssh/id_ed25519
             cd _deploy/
+            cat > .env <<EOF
+            DEBUG=${APP__DEBUG}
+            SECRET_KEY="${APP__SECRET_KEY}"
+            ALLOWED_HOSTS=${APP__ALLOWED_HOSTS}
+            CSRF_TRUSTED_ORIGINS=${APP__CSRF_TRUSTED_ORIGINS}
+            DATABASE_URL=${APP__DATABASE_URL}
+            EOF
             uv run python -m DO_deploy.upload_deployment_script testdjereo test admin
             uv run python -m DO_deploy.list_droplet_IPs test | \
                 xargs -r -n1 -I{} bash -c \
@@ -134,7 +141,8 @@ jobs:
                     -i \"${WEBAPP__CONTAINER_IMAGE}\" \
                     -u \"${GH__CR_USERNAME}\" \
                     -t \"${GH__PAT}\" \
-                    -n \"${WEBAPP__CONTAINER_NAME}\"'"
+                    -n \"${WEBAPP__CONTAINER_NAME}\" \
+                    -e \"/etc/testdjereo/_deploy/.env\"'"
 
   health_test:
     needs:

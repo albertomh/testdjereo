@@ -15,6 +15,7 @@
 #     - [ ] wget
 #   Data that needs to be passed to this script:
 #     - [ ] A *classic* GitHub PAT with scope `read:packages`
+#     - [ ] The absolute path to a .env file for the container to use
 
 import argparse
 import dataclasses as dc
@@ -44,6 +45,7 @@ class Args:
     gh_pat: str
     docker_image: str
     container_name: str
+    env_file_path: str
 
 
 class PortColour(StrEnum):
@@ -108,6 +110,12 @@ def get_argument_parser() -> argparse.ArgumentParser:
         "--name",
         required=True,
         help="Name for the container eg. `testdjereo`",
+    )
+    parser.add_argument(
+        "-e",
+        "--env-file",
+        required=True,
+        help="Absolute path to the .env file to use with the container",
     )
 
     return parser
@@ -254,6 +262,7 @@ def create_next_app_container(
     next_container_name: str,
     next_port: PortColour,
     next_static_volume: str,
+    env_file_path: str,
 ) -> None:
     docker_image_path = f"{GHCR_BASE_URL}/{docker_image}"
     subprocess.run(
@@ -271,8 +280,8 @@ def create_next_app_container(
             next_container_name,
             "--user",
             "root",
-            # "--env-file",
-            # "/etc/testdjereo/.env",
+            "--env-file",
+            env_file_path,
             "--env",
             f"PORT={next_port.value}",
             "--network",
@@ -357,6 +366,7 @@ def main(args: Args):
         next_container_name=next_container_name,
         next_port=next_port,
         next_static_volume=next_static_volume,
+        env_file_path=args.env_file_path,
     )
     run_django_migrations_in_next_container(next_container_name)
 
@@ -391,6 +401,7 @@ if __name__ == "__main__":
         gh_pat=args_ns.gh_pat,
         docker_image=args_ns.image,
         container_name=args_ns.name,
+        env_file_path=args_ns.env_file,
     )
 
     main(args)

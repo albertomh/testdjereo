@@ -24,7 +24,7 @@ export DIGITALOCEAN__TOKEN=dop_v1_123...
 uv run python -m DO_deploy.infra.apply test [--no-dry-run]
 
 # upload the deployment module to the newly created Droplet(s)
-uv run python -m DO_deploy.upload_deployment_script test
+uv run python -m DO_deploy.upload_deployment_script test admin
 # deploy the webapp following the blue/green strategy
 ssh admin@$dropletIP -t 'cd /etc/testdjereo/; uv run python -m DO_deploy.deploy.blue_green_deploy -u albertomh -t $GH_PAT -i albertomh/testdjereo:latest -n testdjereo'
 ```

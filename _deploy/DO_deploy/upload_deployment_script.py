@@ -11,6 +11,8 @@
 #     - [ ] uv <https://docs.astral.sh/uv>
 #   Data that must be available to this script:
 #     - [ ] A Digital Ocean token stored in env. var. `$DIGITALOCEAN__TOKEN`
+#   Data this assumes exists:
+#     - [ ] The `_deploy/` directory, including a top-level `.env` file
 
 import argparse
 import shlex
@@ -39,7 +41,11 @@ LOGGER = structlog.get_logger()
 def main(*, do_client: DO_Client, app_name: str, env: Environment, user: str):
     target_dir = f"/etc/{app_name}/_deploy/"
 
-    for wkid, ip in get_droplet_ips_for_env(do_client, env, "v4").items():
+    droplet_ips = get_droplet_ips_for_env(do_client, env, "v4")
+    if droplet_ips:
+        LOGGER.info("found Droplets to target", count=len(droplet_ips))
+
+    for wkid, ip in droplet_ips.items():
         try:
             subprocess.run(
                 [
@@ -72,7 +78,11 @@ def main(*, do_client: DO_Client, app_name: str, env: Environment, user: str):
             )
             sys.exit(1)
 
+        # relative to `PACKAGE_ROOT` (tar+ssh changes directories before running below)
+        # use relative paths, do NOT prepend with `PACKAGE_ROOT` in `files_to_upload`
+        # as this would simply recreate the full absolute path in the VPS!
         files_to_upload = [
+            ".env",
             "pyproject.toml",
             "DO_deploy/__init__.py",
             "DO_deploy/_types.py",
@@ -82,7 +92,7 @@ def main(*, do_client: DO_Client, app_name: str, env: Environment, user: str):
         ]
 
         try:
-            tar_cmd = ["tar", "czf", "-", *files_to_upload]
+            tar_cmd = ["tar", "czf", "-", *[str(f) for f in files_to_upload]]
             ssh_cmd = [
                 "ssh",
                 "-vvv",
@@ -99,13 +109,13 @@ def main(*, do_client: DO_Client, app_name: str, env: Environment, user: str):
                 check=True,
             )
             LOGGER.info(
-                "used ssh & tar to upload files to host",
+                "used ssh + tar to upload files to host",
                 files_count=len(files_to_upload),
                 wkid=str(wkid),
             )
         except subprocess.CalledProcessError:
             LOGGER.error(
-                "failed to scp files to host", target_dir=target_dir, wkid=str(wkid)
+                "failed to ssh files up to host", target_dir=target_dir, wkid=str(wkid)
             )
             sys.exit(1)
 
@@ -115,7 +125,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "app_name",
         type=str,
-        help="Name of the application, used to generate `/etc/$app_name` in target VPS",
+        help="Name of the application, used to create `/etc/$app_name/` in target VPS",
     )
     parser.add_argument(
         "env",
