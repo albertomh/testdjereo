@@ -175,8 +175,9 @@ def log_in_to_github_container_registry(
     if result.returncode == 0:
         LOG.info("logged into ghcr.io")
     else:
-        LOG.error("could not log into ghcr.io - check PAT passed as [-t, --gh-pat]")
-        sys.exit(1)
+        raise RuntimeError(
+            "could not log into ghcr.io - check PAT passed as [-t, --gh-pat]"
+        )
 
 
 def new_static_volume_for_next(container_name: str) -> str:
@@ -194,8 +195,9 @@ def new_static_volume_for_next(container_name: str) -> str:
         LOG.info("created volume for static assets '%s'", volume_name)
         return volume_name
     except subprocess.CalledProcessError:
-        LOG.error("failed to create volume for static assets '%s'", volume_name)
-        sys.exit(1)
+        raise RuntimeError(
+            f"failed to create volume for static assets to be used with '{container_name}'"
+        )
 
 
 def get_containers_by_filter(filter_expr: str) -> list[DockerContainerInfo]:
@@ -215,8 +217,7 @@ def get_containers_by_filter(filter_expr: str) -> list[DockerContainerInfo]:
             check=True,
         )
     except subprocess.CalledProcessError:
-        LOG.error("'docker ps' failed. Check the Docker service is running.")
-        sys.exit(1)
+        raise RuntimeError("'docker ps' failed. Check the Docker service is running.")
 
     containers: list[DockerContainerInfo] = [
         {"ID": fields[0], "Names": fields[1], "Ports": fields[2]}
@@ -227,7 +228,10 @@ def get_containers_by_filter(filter_expr: str) -> list[DockerContainerInfo]:
 
 
 def get_server_colours(container_name_prefix: str) -> tuple[ServerColour, ServerColour]:
-    container_res = get_containers_by_filter(f"name=^{container_name_prefix}")
+    try:
+        container_res = get_containers_by_filter(f"name=^{container_name_prefix}")
+    except RuntimeError as e:
+        raise e
 
     if len(container_res) == 0:
         LOG.warning("no running container found for '%s'", container_name_prefix)
@@ -240,8 +244,7 @@ def get_server_colours(container_name_prefix: str) -> tuple[ServerColour, Server
     elif len(container_res) == 1:
         cur_container = container_res[0]
     else:
-        LOG.error("found more than one '%s' container", container_name_prefix)
-        sys.exit(1)
+        raise RuntimeError(f"found more than one '{container_name_prefix}' container")
 
     cur_port_mapping = cur_container["Ports"]
     if f"{PortColour.BLUE.value}->{PortColour.BLUE.value}" in cur_port_mapping:
@@ -251,10 +254,9 @@ def get_server_colours(container_name_prefix: str) -> tuple[ServerColour, Server
         cur_colour = ServerColour.GREEN
         next_colour = ServerColour.BLUE
     else:
-        LOG.error(
-            "could not establish next colour for '%s' container", container_name_prefix
+        raise RuntimeError(
+            f"could not establish next colour for '{container_name_prefix}' container"
         )
-        sys.exit(1)
 
     LOG.info("current colour: %s, next colour: %s", cur_colour.value, next_colour.value)
     return cur_colour, next_colour
@@ -302,9 +304,8 @@ def create_next_app_container(
     if result.returncode == 0:
         LOG.info("created new container '%s'", next_container_name)
     else:
-        LOG.error("failed to create new container '%s'", next_container_name)
         LOG.error(result.stderr.decode("utf-8"))
-        sys.exit(1)
+        raise RuntimeError(f"failed to create new container {next_container_name}")
 
 
 def run_django_migrations_in_next_container(next_container_name: str):
@@ -319,7 +320,6 @@ def run_django_migrations_in_next_container(next_container_name: str):
         LOG.error(
             "error running Django migrations in container '%s'", next_container_name
         )
-        sys.exit(1)
 
 
 def container_is_healthy(
@@ -329,7 +329,10 @@ def container_is_healthy(
 
 
 def stop_and_remove_container(container_name: str):
-    container = get_containers_by_filter(f"name={container_name}")
+    try:
+        container = get_containers_by_filter(f"name={container_name}")
+    except RuntimeError as e:
+        raise e
 
     if not container:
         LOG.warning("no running container found for '%s'", container_name)
@@ -339,15 +342,13 @@ def stop_and_remove_container(container_name: str):
     if result.returncode == 0:
         LOG.info("stopped container '%s'", container_name)
     else:
-        LOG.error("error stopping old container '%s'", container_name)
-        sys.exit(1)
+        raise RuntimeError(f"error stopping old container '{container_name}'")
 
     result = subprocess.run(["docker", "rm", container_name], capture_output=True)
     if result.returncode == 0:
         LOG.info("removed container '%s'", container_name)
     else:
-        LOG.error("error removing old container '%s'", container_name)
-        sys.exit(1)
+        raise RuntimeError(f"error removing old container '{container_name}'")
 
 
 def main(args: Args):
@@ -357,21 +358,37 @@ def main(args: Args):
     create_docker_network(docker_network_name)
 
     # create new app container -------------------------------------------------
-    log_in_to_github_container_registry(args.ghcr_username, args.gh_pat)
+    try:
+        log_in_to_github_container_registry(args.ghcr_username, args.gh_pat)
+    except RuntimeError as e:
+        LOG.error(str(e))
 
-    next_static_volume = new_static_volume_for_next(args.container_name)
+    try:
+        next_static_volume = new_static_volume_for_next(args.container_name)
+    except RuntimeError as e:
+        LOG.error(str(e))
 
-    cur_server_colour, next_server_colour = get_server_colours(args.container_name)
-    cur_container_name = f"{args.container_name}_{cur_server_colour.value}"
-    next_container_name = f"{args.container_name}_{next_server_colour.value}"
-    next_port = PortColour[next_server_colour.upper()]
-    create_next_app_container(
-        docker_image=args.docker_image,
-        next_container_name=next_container_name,
-        next_port=next_port,
-        next_static_volume=next_static_volume,
-        env_file_path=args.env_file_path,
-    )
+    try:
+        cur_server_colour, next_server_colour = get_server_colours(args.container_name)
+        cur_container_name = f"{args.container_name}_{cur_server_colour.value}"
+        next_container_name = f"{args.container_name}_{next_server_colour.value}"
+        next_port = PortColour[next_server_colour.upper()]
+    except RuntimeError as e:
+        LOG.error(str(e))
+        sys.exit(1)
+
+    try:
+        create_next_app_container(
+            docker_image=args.docker_image,
+            next_container_name=next_container_name,
+            next_port=next_port,
+            next_static_volume=next_static_volume,
+            env_file_path=args.env_file_path,
+        )
+    except RuntimeError as e:
+        LOG.error(str(e))
+        sys.exit(1)
+
     run_django_migrations_in_next_container(next_container_name)
 
     if container_is_healthy(
@@ -386,10 +403,15 @@ def main(args: Args):
 
     # clean up -----------------------------------------------------------------
 
-    stop_and_remove_container(cur_container_name)
-    subprocess.run(
-        ["docker", "volume", "prune", "--all", "--force"],
-    )
+    try:
+        stop_and_remove_container(cur_container_name)
+    except RuntimeError as e:
+        LOG.error(str(e))
+        sys.exit(1)
+    finally:
+        subprocess.run(
+            ["docker", "volume", "prune", "--all", "--force"],
+        )
 
     LOG.info("now serving from '%s:%s'", next_container_name, next_port)
     LOG.info("deployment done.")
