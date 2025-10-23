@@ -43,7 +43,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     make \
+    sqlite3 \
     && rm -rf /var/lib/apt/lists/*
+# TODO: remove sqlite3 from list - just for dev!
 
 # Synchronise dependencies without the application itself.
 # Cached until `uv.lock` or `pyproject.toml` change.

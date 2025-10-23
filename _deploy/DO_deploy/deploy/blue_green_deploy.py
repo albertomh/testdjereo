@@ -226,19 +226,21 @@ def get_containers_by_filter(filter_expr: str) -> list[DockerContainerInfo]:
     return containers
 
 
-def get_server_colours(container_name: str) -> tuple[ServerColour, ServerColour]:
-    container_res = get_containers_by_filter(f"name=^{container_name}")
+def get_server_colours(container_name_prefix: str) -> tuple[ServerColour, ServerColour]:
+    container_res = get_containers_by_filter(f"name=^{container_name_prefix}")
 
     if len(container_res) == 0:
-        LOG.warning("no running container found for '%s'", container_name)
+        LOG.warning("no running container found for '%s'", container_name_prefix)
+        blue_port_map = f"{PortColour.BLUE.value}->{PortColour.BLUE.value}"
         cur_container: DockerContainerInfo = {
             "ID": "placeholderID",
-            "Names": "tplaceholderName",
-            "Ports": "0.0.0.0:8000->8000/tcp, :::8000->8000/tcp",
+            "Names": "placeholderName",
+            "Ports": f"0.0.0.0:{blue_port_map}/tcp, :::{blue_port_map}/tcp",
         }
-
-    if len(container_res) > 1:
-        LOG.error("found more than one '%s' container", container_name)
+    elif len(container_res) == 1:
+        cur_container = container_res[0]
+    else:
+        LOG.error("found more than one '%s' container", container_name_prefix)
         sys.exit(1)
 
     cur_port_mapping = cur_container["Ports"]
@@ -249,7 +251,9 @@ def get_server_colours(container_name: str) -> tuple[ServerColour, ServerColour]
         cur_colour = ServerColour.GREEN
         next_colour = ServerColour.BLUE
     else:
-        LOG.error("could not establish next colour for '%s' container", container_name)
+        LOG.error(
+            "could not establish next colour for '%s' container", container_name_prefix
+        )
         sys.exit(1)
 
     LOG.info("current colour: %s, next colour: %s", cur_colour.value, next_colour.value)

@@ -109,7 +109,7 @@ def main(*, do_client: DO_Client, app_name: str, env: Environment, user: str):
                 check=True,
             )
             LOGGER.info(
-                "used ssh + tar to upload files to host",
+                "used tar + ssh to upload files to host",
                 files_count=len(files_to_upload),
                 wkid=str(wkid),
             )
