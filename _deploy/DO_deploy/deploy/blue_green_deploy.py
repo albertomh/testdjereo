@@ -22,9 +22,12 @@ import dataclasses as dc
 import logging
 import subprocess
 import sys
+import json
+import urllib.request
 from argparse import RawTextHelpFormatter
 from datetime import datetime
 from enum import StrEnum, auto
+from json.decoder import JSONDecodeError
 from pathlib import Path
 from typing import TypedDict
 
@@ -325,7 +328,12 @@ def run_django_migrations_in_next_container(next_container_name: str):
 def container_is_healthy(
     *, port: PortColour, health_endpoint: str, expect_res: str
 ) -> bool:
-    return False
+    try:
+        res = urllib.request.urlopen(f"http://127.0.0.1:{port}{health_endpoint}")
+        res_json = json.loads(res.read())
+        return res_json["healthy"]
+    except JSONDecodeError as e:
+        raise RuntimeError(str(e))
 
 
 def stop_and_remove_container(container_name: str):
@@ -391,12 +399,16 @@ def main(args: Args):
 
     run_django_migrations_in_next_container(next_container_name)
 
-    if container_is_healthy(
-        port=next_port, health_endpoint="/-/health/", expect_res='{"healthy": true}'
-    ):
-        LOG.info("next container '%s' is healthy", next_container_name)
-    else:
-        LOG.error("next container '%s' is not healthy", next_container_name)
+    try:
+        if container_is_healthy(
+            port=next_port, health_endpoint="/-/health/", expect_res='{"healthy": true}'
+        ):
+            LOG.info("next container '%s' is healthy", next_container_name)
+        else:
+            LOG.error("next container '%s' is not healthy", next_container_name)
+            sys.exit(1)
+    except RuntimeError as e:
+        LOG.error(str(e))
         sys.exit(1)
 
     # configure nginx ----------------------------------------------------------
