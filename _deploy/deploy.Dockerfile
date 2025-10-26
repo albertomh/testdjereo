@@ -19,24 +19,20 @@
 FROM python:3.14-slim-bookworm
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-ENV PORT=
-
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
 # - Silence uv complaining about not being able to use hard links.
 # - Enable bytecode compilation - trade longer installation for faster start-up times.
 # - Prevent uv from accidentally downloading isolated Python builds.
 # - Declare `/app` as the target for `uv sync`.
-ENV UV_LINK_MODE=copy \
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
-    UV_PYTHON_DOWNLOADS=never
+    UV_PYTHON_DOWNLOADS=never \
+    PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app
 
-# uv sync:
-#     --locked: Assert that `uv.lock` will remain unchanged as part of running `uv sync`.
-
+# Install build dependencies
 # Only needed while `brotli` wheels for 3.14 aren't available
 # <https://github.com/google/brotli/issues/1351>
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -47,39 +43,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 # TODO: remove sqlite3 from list - just for dev!
 
-# Synchronise dependencies without the application itself.
-# Cached until `uv.lock` or `pyproject.toml` change.
+# Synchronise dependencies (creates .venv)
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync \
         --frozen \
-        --no-dev \
-        --no-install-project
+        --no-dev
 
-# Install the application without dependencies.
-ADD . .
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync \
-        --frozen \
-        --no-dev \
-        --no-editable
-RUN uv pip install .
-
-# Make executables available in the environment.
-ENV PATH="/app/.venv/bin:$PATH"
-
-# Invoke with `docker build` with `--build-arg CACHEBUST=$(date +%s)` to bust layer cache.
-ARG CACHEBUST=1
-
+COPY . .
 COPY _deploy/.env.deploy .env
-RUN python manage.py collectstatic --noinput
-RUN rm .env
+# Install the webapp (dependencies already installed by `uv sync`)
+RUN uv pip install . --no-deps
 
-# Reset the entrypoint, avoid base image's call to `uv`.
+RUN python manage.py collectstatic --noinput && rm .env
+
 ENTRYPOINT []
 
 # `sh -c` allows variable expansion ($PORT) while allowing for the benefits of 'exec form'
 # (CMD [...]) over 'shell form' (CMD ...). Benefits include preserving signal handling and
 # improved container shutdown behavior.
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:$PORT testdjereo.wsgi:application"]
+CMD ["sh", "-c", "python -m gunicorn --bind 0.0.0.0:${PORT} testdjereo.wsgi:application"]

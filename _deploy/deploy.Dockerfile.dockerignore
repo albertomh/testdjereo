@@ -1,6 +1,7 @@
 .coverage
 .editorconfig
 .gitattributes
+.git/
 .github/
 .gitignore
 .markdownlint-cli2.yaml
@@ -15,7 +16,10 @@ biome.jsonc
 docs/
 htmlcov
 noxfile.py
+.nox/
 tests_e2e/
 tests/
+__pycache__/
+.mypy_cache/
 
 *tar.gz

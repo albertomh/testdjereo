@@ -22,6 +22,7 @@ import dataclasses as dc
 import logging
 import subprocess
 import sys
+import time
 import json
 import urllib.request
 from argparse import RawTextHelpFormatter
@@ -192,6 +193,7 @@ def new_static_volume_for_next(container_name: str) -> str:
                 "docker",
                 "volume",
                 "create",
+                volume_name,
             ],
             check=True,
         )
@@ -280,6 +282,10 @@ def create_next_app_container(
         check=False,
     )
 
+    subprocess.run(
+        ["docker", "rm", "-f", next_container_name],
+    )
+
     result = subprocess.run(
         [
             "docker",
@@ -320,20 +326,35 @@ def run_django_migrations_in_next_container(next_container_name: str):
     if result.returncode == 0:
         LOG.info("ran Django migrations in container '%s'", next_container_name)
     else:
+        LOG.error("'django migrate' stderr: %s", result.stderr.decode())
         LOG.error(
             "error running Django migrations in container '%s'", next_container_name
         )
 
 
 def container_is_healthy(
-    *, port: PortColour, health_endpoint: str, expect_res: str
+    *,
+    port: PortColour,
+    health_endpoint: str,
+    max_attempts: int = 10,
+    initial_delay: float = 1.0,
+    backoff_factor: float = 2.0,
 ) -> bool:
-    try:
-        res = urllib.request.urlopen(f"http://127.0.0.1:{port}{health_endpoint}")
-        res_json = json.loads(res.read())
-        return res_json["healthy"]
-    except JSONDecodeError as e:
-        raise RuntimeError(str(e))
+    retry_delay = initial_delay
+    for attempt in range(max_attempts):
+        try:
+            res = urllib.request.urlopen(f"http://127.0.0.1:{port}{health_endpoint}")
+            res_json = json.loads(res.read())
+            return res_json["healthy"]
+        except JSONDecodeError as e:
+            raise RuntimeError(str(e))
+        except (urllib.error.URLError, ConnectionRefusedError):
+            if attempt < max_attempts - 1:
+                time.sleep(retry_delay)
+                retry_delay *= backoff_factor
+                continue
+            raise
+    return False
 
 
 def stop_and_remove_container(container_name: str):
@@ -401,7 +422,8 @@ def main(args: Args):
 
     try:
         if container_is_healthy(
-            port=next_port, health_endpoint="/-/health/", expect_res='{"healthy": true}'
+            port=next_port,
+            health_endpoint="/-/health/",
         ):
             LOG.info("next container '%s' is healthy", next_container_name)
         else:
