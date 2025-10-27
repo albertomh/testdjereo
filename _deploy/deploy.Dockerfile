@@ -16,16 +16,14 @@
 #
 # Based on <https://github.com/astral-sh/uv-docker-example/blob/main/Dockerfile>
 
-FROM python:3.14-slim-bookworm
+FROM python:3.14-slim-bookworm AS builder
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # - Silence uv complaining about not being able to use hard links.
 # - Enable bytecode compilation - trade longer installation for faster start-up times.
 # - Prevent uv from accidentally downloading isolated Python builds.
 # - Declare `/app` as the target for `uv sync`.
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    UV_LINK_MODE=copy \
+ENV UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
     UV_PYTHON_DOWNLOADS=never \
     PATH="/app/.venv/bin:$PATH"
@@ -57,6 +55,26 @@ COPY _deploy/.env.deploy .env
 RUN uv pip install . --no-deps
 
 RUN python manage.py collectstatic --noinput && rm .env
+
+# ----------------------------------------------------------------------------------------
+# runtime stage
+
+# TODO: read <https://www.joshkasuboski.com/posts/distroless-python-uv/>
+
+FROM python:3.14-slim-bookworm
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/app/.venv/bin:$PATH"
+
+# TODO: remove sqlite3 installation step - just for dev!
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sqlite3 && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY --from=builder /app /app
 
 ENTRYPOINT []
 
