@@ -121,6 +121,7 @@ runcmd:
 
 # - TODO: set up LetsEncrypt, autorenewal, etc.
   - mkdir -p /etc/nginx/
+  - chown -R admin:admin /etc/nginx
   - |
     openssl req -x509 -newkey rsa:4096 \
     -keyout /etc/nginx/privkey.pem \

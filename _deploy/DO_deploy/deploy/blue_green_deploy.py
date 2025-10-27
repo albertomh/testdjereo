@@ -384,7 +384,12 @@ def stop_and_remove_container(container_name: str):
 
 
 def update_nginx_proxy_target(next_port: PortColour):
-    template_path = PACKAGE_ROOT / "DO_deploy" / "deploy" / "nginx" / "app.conf.template"
+    debian_default = Path("/etc/nginx/sites-enabled/default")
+    debian_default.unlink(missing_ok=True)
+
+    template_path = (
+        PACKAGE_ROOT / "DO_deploy" / "deploy" / "nginx" / "app.conf.template"
+    )
     live_path = Path("/etc/nginx/conf.d/app.conf")
 
     if not template_path.exists():
@@ -393,13 +398,15 @@ def update_nginx_proxy_target(next_port: PortColour):
     conf_text = template_path.read_text().replace("{{APP_PORT}}", next_port.value)
     live_path.write_text(conf_text)
 
-    result = subprocess.run(["nginx", "-t"], capture_output=True, text=True)
+    result = subprocess.run(
+        ["sudo", "/usr/sbin/nginx", "-t"], capture_output=True, text=True
+    )
     if result.returncode != 0:
         LOG.error("nginx config test failed:\n%s", result.stderr)
         raise RuntimeError("nginx config test failed")
 
     reload_res = subprocess.run(
-        ["systemctl", "reload", "nginx"], capture_output=True, text=True
+        ["sudo", "systemctl", "reload", "nginx"], capture_output=True, text=True
     )
     if reload_res.returncode == 0:
         LOG.info("nginx reloaded and now proxies to port %s", next_port.value)
