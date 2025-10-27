@@ -30,8 +30,8 @@ from DO_deploy._utils import (
 )
 from DO_deploy.list_droplet_IPs import get_droplet_ips_for_env
 
-# `_deploy/` ie. closest pyproject.toml
-PACKAGE_ROOT = Path(__file__).resolve().parent.parent
+# `_deploy/` ie. directory containing closest pyproject.toml
+PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 
 
 configure_logging()

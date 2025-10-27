@@ -120,6 +120,13 @@ runcmd:
   - echo "0 0 * * MON root uv self update" | sudo tee -a /etc/crontab
 
 # - TODO: set up LetsEncrypt, autorenewal, etc.
+  - mkdir -p /etc/nginx/
+  - |
+    openssl req -x509 -newkey rsa:4096 \
+    -keyout /etc/nginx/privkey.pem \
+    -out /etc/nginx/fullchain.pem \
+    -days 365 -nodes \
+    -subj "/CN=$(wget --quiet ifconfig.me)"
 
   - apt autoremove -y
 
