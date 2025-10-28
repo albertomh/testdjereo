@@ -101,13 +101,16 @@ jobs:
     needs:
       - apply_test
     runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./_deploy/
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v7
         with:
           version: "0.9.4"
       - name: Create SSH private key
-        shell: bash
         env:
           SSH__PRIVATE_KEY: ${{ secrets.SSH__PRIVATE_KEY }}
         run: |
@@ -115,7 +118,6 @@ jobs:
             echo "$SSH__PRIVATE_KEY" > ~/.ssh/id_ed25519
             chmod 600 ~/.ssh/id_ed25519
       - name: Create .env file
-        shell: bash
         env:
           APP__ALLOWED_HOSTS: ${{ secrets.APP__ALLOWED_HOSTS }}
           APP__CSRF_TRUSTED_ORIGINS: ${{ secrets.APP__CSRF_TRUSTED_ORIGINS }}
@@ -123,7 +125,6 @@ jobs:
           APP__DEBUG: ${{ secrets.APP__DEBUG }}
           APP__SECRET_KEY: ${{ secrets.APP__SECRET_KEY }}
         run: |
-            cd _deploy/
             cat > .env <<EOF
             DEBUG=${APP__DEBUG}
             SECRET_KEY="${APP__SECRET_KEY}"
@@ -132,14 +133,11 @@ jobs:
             DATABASE_URL=${APP__DATABASE_URL}
             EOF
       - name: Upload blue/green deployment script
-        shell: bash
         env:
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
         run: |
-            cd _deploy/
             uv run python -m DO_deploy.upload_deployment_script testdjereo test admin
       - name: Run blue/green deployment
-        shell: bash
         env:
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
           GH__CR_USERNAME: ${{ secrets.GH__CR_USERNAME }}
@@ -147,7 +145,6 @@ jobs:
           WEBAPP__CONTAINER_IMAGE: ${{ secrets.WEBAPP__CONTAINER_IMAGE }}
           WEBAPP__CONTAINER_NAME: ${{ secrets.WEBAPP__CONTAINER_NAME }}
         run: |
-            cd _deploy/
             uv run python -m DO_deploy.list_droplet_IPs test | \
                 xargs -r -n1 -I{} bash -c \
                 "ssh -t admin@{} 'cd /etc/testdjereo/_deploy/ && \
@@ -166,6 +163,7 @@ jobs:
       - shell: bash
         run: |
             echo "TODO: check test health!"
+            exit 1
 
   plan_live:
     needs:
@@ -233,6 +231,7 @@ jobs:
           APP__SECRET_KEY: ${{ secrets.APP__SECRET_KEY }}
         run: |
             echo "TODO: deploy app to live!"
+            exit 1
 
   health_live:
     needs:
@@ -242,3 +241,4 @@ jobs:
       - shell: bash
         run: |
             echo "TODO: check live health!"
+            exit 1
