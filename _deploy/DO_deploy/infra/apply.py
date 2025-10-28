@@ -9,7 +9,7 @@ from types import ModuleType
 import structlog
 from pydo import Client as DO_Client
 
-from DO_deploy._utils import configure_logging
+from DO_deploy._utils import configure_structlog
 from DO_deploy.infra._types import (
     DropletRequest,
     Environment,
@@ -25,7 +25,7 @@ from DO_deploy._DO_types import (
     DropletResponse,
 )
 
-configure_logging()
+configure_structlog()
 LOGGER = structlog.get_logger()
 
 

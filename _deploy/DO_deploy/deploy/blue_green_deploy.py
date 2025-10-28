@@ -31,7 +31,7 @@ from json.decoder import JSONDecodeError
 from pathlib import Path
 from typing import TypedDict
 
-from DO_deploy.infra._utils import set_up_logging
+from DO_deploy._utils import set_up_basic_logging
 
 GHCR_BASE_URL = "ghcr.io"
 
@@ -524,7 +524,7 @@ def main(args: Args):
 
 
 if __name__ == "__main__":
-    set_up_logging()
+    set_up_basic_logging()
 
     parser = get_argument_parser()
     args_ns = parser.parse_args(args=None if sys.argv[1:] else ["--help"])

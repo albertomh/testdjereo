@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import logging
 import os
@@ -53,7 +54,19 @@ def get_public_ip(
     return None
 
 
-def configure_logging():
+def set_up_basic_logging():
+    class PaddedFormatter(logging.Formatter):
+        def format(self, record):
+            record.levelname = record.levelname.ljust(len("WARNING"))
+            record.asctime = datetime.fromtimestamp(record.created).strftime("%H:%M:%S")
+            return f"{record.levelname} [{record.asctime}] {record.getMessage()}"
+
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    for h in logging.getLogger().handlers:
+        h.setFormatter(PaddedFormatter())
+
+
+def configure_structlog():
     structlog.configure(
         processors=[
             structlog.stdlib.add_log_level,

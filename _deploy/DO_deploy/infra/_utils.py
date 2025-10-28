@@ -1,22 +1,8 @@
-from datetime import datetime
-import logging
 from pathlib import Path
 
 from jinja2 import Template
 
 from DO_deploy._types import EnvVarDataClass
-
-
-def set_up_logging():
-    class PaddedFormatter(logging.Formatter):
-        def format(self, record):
-            record.levelname = record.levelname.ljust(len("WARNING"))
-            record.asctime = datetime.fromtimestamp(record.created).strftime("%H:%M:%S")
-            return f"{record.levelname} [{record.asctime}] {record.getMessage()}"
-
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
-    for h in logging.getLogger().handlers:
-        h.setFormatter(PaddedFormatter())
 
 
 def render_cloud_config(name: str, env_vars: EnvVarDataClass) -> str:

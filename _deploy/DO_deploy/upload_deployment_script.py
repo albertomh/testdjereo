@@ -25,7 +25,7 @@ from pydo import Client as DO_Client
 
 from DO_deploy._types import Environment
 from DO_deploy._utils import (
-    configure_logging,
+    configure_structlog,
     get_DO_client,
 )
 from DO_deploy.list_droplet_IPs import get_droplet_ips_for_env
@@ -34,7 +34,7 @@ from DO_deploy.list_droplet_IPs import get_droplet_ips_for_env
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 
 
-configure_logging()
+configure_structlog()
 LOGGER = structlog.get_logger()
 
 

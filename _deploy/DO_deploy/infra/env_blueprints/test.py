@@ -1,7 +1,12 @@
 from enum import Enum
 from uuid import UUID
 
-from DO_deploy._DO_types import DORegion, DropletImage, DropletRequest, DropletSize
+from DO_deploy._DO_types import (
+    DORegion,
+    DropletImage,
+    DropletRequest,
+    DropletSize,
+)
 from DO_deploy.infra._consts import SSH_KEYS
 from DO_deploy.infra._types import (
     AppServerEnv,

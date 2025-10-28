@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 
 from DO_deploy._types import Environment
-from DO_deploy.infra._utils import set_up_logging
+from DO_deploy._utils import set_up_basic_logging
 
 LOG = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ def main(env: Environment):
 
 
 if __name__ == "__main__":
-    set_up_logging()
+    set_up_basic_logging()
 
     parser = argparse.ArgumentParser(
         prog=Path(__file__).name,
