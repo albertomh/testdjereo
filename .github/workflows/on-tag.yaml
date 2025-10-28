@@ -61,8 +61,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
-      - run: |
-          echo "REPO_NAME=${GITHUB_REPOSITORY@L}" >> $GITHUB_ENV
+      - run: echo "REPO_NAME=${GITHUB_REPOSITORY@L}" >> $GITHUB_ENV
       - uses: ./.github/actions/containerise
         with:
           dockerfile: _deploy/deploy.Dockerfile
@@ -158,14 +157,28 @@ jobs:
     needs:
       - deploy_test
     runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./_deploy/
     steps:
-      - shell: bash
-        run: uv run python -m DO_deploy.check_deployment_health test
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.4"
+      - name: Check service health for 'test' env
+        env:
+          DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
+        run: uv run python -m DO_deploy.check_service_health test
 
   plan_live:
     needs:
       - health_test
     runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./_deploy/
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v7
@@ -182,13 +195,16 @@ jobs:
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
           # needed by `DO_deploy.infra.apply`
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
-        working-directory: ./_deploy/
         run: uv run python -m DO_deploy.infra.apply live
 
   apply_live:
     needs:
       - plan_live
     runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./_deploy/
     environment:
       name: live
     steps:
@@ -207,20 +223,22 @@ jobs:
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
           # needed by `DO_deploy.infra.apply`
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
-        working-directory: ./_deploy/
         run: uv run python -m DO_deploy.infra.apply live --no-dry-run
 
   deploy_live:
     needs:
       - apply_live
     runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./_deploy/
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v7
         with:
           version: "0.9.4"
-      - shell: bash
-        env:
+      - env:
           APP__ALLOWED_HOSTS: ${{ secrets.APP__ALLOWED_HOSTS }}
           APP__CSRF_TRUSTED_ORIGINS: ${{ secrets.APP__CSRF_TRUSTED_ORIGINS }}
           APP__DATABASE_URL: ${{ secrets.APP__DATABASE_URL }}
@@ -234,8 +252,16 @@ jobs:
     needs:
       - deploy_live
     runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./_deploy/
     steps:
-      - shell: bash
-        run: |
-            echo "TODO: check live health!"
-            exit 1
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.4"
+      - name: Check service health for 'live' env
+        env:
+          DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
+        run: uv run python -m DO_deploy.check_service_health live

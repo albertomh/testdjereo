@@ -84,11 +84,7 @@ def main(*, do_client: DO_Client, app_name: str, env: Environment, user: str):
         files_to_upload = [
             ".env",
             "pyproject.toml",
-            "DO_deploy/__init__.py",
-            "DO_deploy/_types.py",
-            "DO_deploy/_DO_types.py",
-            "DO_deploy/_utils.py",
-            "DO_deploy/deploy/",
+            *[str(p) for p in Path("DO_deploy").rglob("*") if p.is_file()],
         ]
 
         try:

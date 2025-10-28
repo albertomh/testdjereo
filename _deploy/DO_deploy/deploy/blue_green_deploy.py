@@ -22,16 +22,13 @@ import dataclasses as dc
 import logging
 import subprocess
 import sys
-import time
-import json
-import urllib.request
 from datetime import datetime
 from enum import StrEnum, auto
-from json.decoder import JSONDecodeError
 from pathlib import Path
 from typing import TypedDict
 
 from DO_deploy._utils import set_up_basic_logging
+from DO_deploy.check_service_health import service_is_healthy
 
 GHCR_BASE_URL = "ghcr.io"
 
@@ -262,6 +259,7 @@ def get_server_colours(container_name_prefix: str) -> tuple[ServerColour, Server
 def create_next_app_container(
     *,
     docker_image: str,
+    network_name: str,
     next_container_name: str,
     next_port: PortColour,
     next_static_volume: str,
@@ -292,7 +290,7 @@ def create_next_app_container(
             "--env",
             f"PORT={next_port.value}",
             "--network",
-            "testdjereo_net",
+            network_name,
             "--publish",
             f"{next_port.value}:{next_port.value}",
             "--volume",
@@ -322,63 +320,6 @@ def run_django_migrations_in_next_container(next_container_name: str):
         LOG.error(
             "error running Django migrations in container '%s'", next_container_name
         )
-
-
-def container_is_healthy(
-    *,
-    port: PortColour,
-    health_endpoint: str,
-    max_attempts: int = 10,
-    initial_delay: float = 1.0,
-    backoff_factor: float = 2.0,
-) -> bool:
-    retry_delay = initial_delay
-    for attempt in range(max_attempts):
-        try:
-            res = urllib.request.urlopen(f"http://127.0.0.1:{port}{health_endpoint}")
-            res_json = json.loads(res.read())
-            return res_json["healthy"]
-        except JSONDecodeError as e:
-            raise RuntimeError(str(e))
-        except (urllib.error.URLError, ConnectionRefusedError):
-            if attempt < max_attempts - 1:
-                time.sleep(retry_delay)
-                retry_delay *= backoff_factor
-                continue
-            raise
-    return False
-
-
-def update_nginx_proxy_target(next_port: PortColour):
-    debian_default = Path("/etc/nginx/sites-enabled/default")
-    debian_default.unlink(missing_ok=True)
-
-    template_path = (
-        PACKAGE_ROOT / "DO_deploy" / "deploy" / "nginx" / "app.conf.template"
-    )
-    live_path = Path("/etc/nginx/conf.d/app.conf")
-
-    if not template_path.exists():
-        raise FileNotFoundError(f"nginx template not found '{template_path}'")
-
-    conf_text = template_path.read_text().replace("{{APP_PORT}}", next_port.value)
-    live_path.write_text(conf_text)
-
-    result = subprocess.run(
-        ["sudo", "/usr/sbin/nginx", "-t"], capture_output=True, text=True
-    )
-    if result.returncode != 0:
-        LOG.error("nginx config test failed:\n%s", result.stderr)
-        raise RuntimeError("nginx config test failed")
-
-    reload_res = subprocess.run(
-        ["sudo", "systemctl", "reload", "nginx"], capture_output=True, text=True
-    )
-    if reload_res.returncode == 0:
-        LOG.info("nginx reloaded and now proxies to port %s", next_port.value)
-    else:
-        LOG.error("failed to reload nginx: %s", reload_res.stderr)
-        raise RuntimeError("failed to reload nginx")
 
 
 def create_self_signed_cert():
@@ -416,6 +357,38 @@ def create_self_signed_cert():
 
     subprocess.run(["sudo", "chmod", "600", str(key_path)], check=True)
     LOG.info("self-signed certificate created at '%s'", str(cert_path))
+
+
+def update_nginx_proxy_target(next_port: PortColour):
+    debian_default = Path("/etc/nginx/sites-enabled/default")
+    debian_default.unlink(missing_ok=True)
+
+    template_path = (
+        PACKAGE_ROOT / "DO_deploy" / "deploy" / "nginx" / "app.conf.template"
+    )
+    live_path = Path("/etc/nginx/conf.d/app.conf")
+
+    if not template_path.exists():
+        raise FileNotFoundError(f"nginx template not found '{template_path}'")
+
+    conf_text = template_path.read_text().replace("{{APP_PORT}}", next_port.value)
+    live_path.write_text(conf_text)
+
+    result = subprocess.run(
+        ["sudo", "/usr/sbin/nginx", "-t"], capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        LOG.error("nginx config test failed:\n%s", result.stderr)
+        raise RuntimeError("nginx config test failed")
+
+    reload_res = subprocess.run(
+        ["sudo", "systemctl", "reload", "nginx"], capture_output=True, text=True
+    )
+    if reload_res.returncode == 0:
+        LOG.info("nginx reloaded and now proxies to port %s", next_port.value)
+    else:
+        LOG.error("failed to reload nginx: %s", reload_res.stderr)
+        raise RuntimeError("failed to reload nginx")
 
 
 def stop_and_remove_container(container_name: str):
@@ -470,6 +443,7 @@ def main(args: Args):
     try:
         create_next_app_container(
             docker_image=args.docker_image,
+            network_name=docker_network_name,
             next_container_name=next_container_name,
             next_port=next_port,
             next_static_volume=next_static_volume,
@@ -482,10 +456,7 @@ def main(args: Args):
     run_django_migrations_in_next_container(next_container_name)
 
     try:
-        if container_is_healthy(
-            port=next_port,
-            health_endpoint="/-/health/",
-        ):
+        if service_is_healthy(protocol="http", port=next_port.value):
             LOG.info("next container '%s' is healthy", next_container_name)
         else:
             LOG.error("next container '%s' is not healthy", next_container_name)
@@ -494,7 +465,7 @@ def main(args: Args):
         LOG.error(str(e))
         sys.exit(1)
 
-    # configure LetsEncrypt and nginx ------------------------------------------
+    # configure certificates and nginx -----------------------------------------
     try:
         create_self_signed_cert()
     except Exception as e:
@@ -508,7 +479,6 @@ def main(args: Args):
         sys.exit(1)
 
     # clean up -----------------------------------------------------------------
-
     try:
         stop_and_remove_container(cur_container_name)
     except RuntimeError as e:
