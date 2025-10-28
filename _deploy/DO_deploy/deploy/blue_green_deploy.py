@@ -25,12 +25,13 @@ import sys
 import time
 import json
 import urllib.request
-from argparse import RawTextHelpFormatter
 from datetime import datetime
 from enum import StrEnum, auto
 from json.decoder import JSONDecodeError
 from pathlib import Path
 from typing import TypedDict
+
+from DO_deploy.infra._utils import set_up_logging
 
 GHCR_BASE_URL = "ghcr.io"
 
@@ -65,18 +66,6 @@ class ServerColour(StrEnum):
     GREEN = auto()
 
 
-def set_up_logging():
-    class PaddedFormatter(logging.Formatter):
-        def format(self, record):
-            record.levelname = record.levelname.ljust(len("WARNING"))
-            record.asctime = datetime.fromtimestamp(record.created).strftime("%H:%M:%S")
-            return f"{record.levelname} [{record.asctime}] {record.getMessage()}"
-
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
-    for h in logging.getLogger().handlers:
-        h.setFormatter(PaddedFormatter())
-
-
 def get_argument_parser() -> argparse.ArgumentParser:
     desc = (
         "Blue/green deployment for Dockerised web apps\n\n"
@@ -90,7 +79,7 @@ def get_argument_parser() -> argparse.ArgumentParser:
         usage="uv run python -m blue_green_deploy",
         description=desc,
         epilog="Text at the bottom of help",
-        formatter_class=RawTextHelpFormatter,
+        formatter_class=argparse.RawTextHelpFormatter,
     )
 
     # arguments converted to more verbose names (`Args` dataclass) in main()
@@ -360,29 +349,6 @@ def container_is_healthy(
     return False
 
 
-def stop_and_remove_container(container_name: str):
-    try:
-        container = get_containers_by_filter(f"name={container_name}")
-    except RuntimeError as e:
-        raise e
-
-    if not container:
-        LOG.warning("no running container found for '%s'", container_name)
-        return
-
-    result = subprocess.run(["docker", "stop", container_name], capture_output=True)
-    if result.returncode == 0:
-        LOG.info("stopped container '%s'", container_name)
-    else:
-        raise RuntimeError(f"error stopping old container '{container_name}'")
-
-    result = subprocess.run(["docker", "rm", container_name], capture_output=True)
-    if result.returncode == 0:
-        LOG.info("removed container '%s'", container_name)
-    else:
-        raise RuntimeError(f"error removing old container '{container_name}'")
-
-
 def update_nginx_proxy_target(next_port: PortColour):
     debian_default = Path("/etc/nginx/sites-enabled/default")
     debian_default.unlink(missing_ok=True)
@@ -413,6 +379,66 @@ def update_nginx_proxy_target(next_port: PortColour):
     else:
         LOG.error("failed to reload nginx: %s", reload_res.stderr)
         raise RuntimeError("failed to reload nginx")
+
+
+def create_self_signed_cert():
+    cert_path = Path("/etc/ssl/certs/selfsigned.crt")
+    key_path = Path("/etc/ssl/private/selfsigned.key")
+
+    if cert_path.exists() and key_path.exists():
+        LOG.info("existing self-signed certificate found")
+        return
+
+    LOG.info("no certificate found, generating self-signed certificate...")
+    Path("/etc/ssl/private").mkdir(parents=True, exist_ok=True)
+    Path("/etc/ssl/certs").mkdir(parents=True, exist_ok=True)
+
+    subprocess.run(
+        [
+            "sudo",
+            "openssl",
+            "req",
+            "-x509",
+            "-nodes",
+            "-days",
+            "365",
+            "-newkey",
+            "rsa:4096",
+            "-keyout",
+            str(key_path),
+            "-out",
+            str(cert_path),
+            "-subj",
+            "/CN=selfsigned",
+        ],
+        check=True,
+    )
+
+    subprocess.run(["sudo", "chmod", "600", str(key_path)], check=True)
+    LOG.info("self-signed certificate created at '%s'", str(cert_path))
+
+
+def stop_and_remove_container(container_name: str):
+    try:
+        container = get_containers_by_filter(f"name={container_name}")
+    except RuntimeError as e:
+        raise e
+
+    if not container:
+        LOG.warning("no running container found for '%s'", container_name)
+        return
+
+    result = subprocess.run(["docker", "stop", container_name], capture_output=True)
+    if result.returncode == 0:
+        LOG.info("stopped container '%s'", container_name)
+    else:
+        raise RuntimeError(f"error stopping old container '{container_name}'")
+
+    result = subprocess.run(["docker", "rm", container_name], capture_output=True)
+    if result.returncode == 0:
+        LOG.info("removed container '%s'", container_name)
+    else:
+        raise RuntimeError(f"error removing old container '{container_name}'")
 
 
 def main(args: Args):
@@ -468,7 +494,12 @@ def main(args: Args):
         LOG.error(str(e))
         sys.exit(1)
 
-    # configure nginx ----------------------------------------------------------
+    # configure LetsEncrypt and nginx ------------------------------------------
+    try:
+        create_self_signed_cert()
+    except Exception as e:
+        LOG.error("failed to create self-signed cert: %s", e)
+        sys.exit(1)
 
     try:
         update_nginx_proxy_target(next_port)

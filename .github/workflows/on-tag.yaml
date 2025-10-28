@@ -135,8 +135,7 @@ jobs:
       - name: Upload blue/green deployment script
         env:
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
-        run: |
-            uv run python -m DO_deploy.upload_deployment_script testdjereo test admin
+        run: uv run python -m DO_deploy.upload_deployment_script testdjereo test admin
       - name: Run blue/green deployment
         env:
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
@@ -149,11 +148,11 @@ jobs:
                 xargs -r -n1 -I{} bash -c \
                 "ssh -t admin@{} 'cd /etc/testdjereo/_deploy/ && \
                     uv run python -m DO_deploy.deploy.blue_green_deploy \
-                    -i \"${WEBAPP__CONTAINER_IMAGE}\" \
-                    -u \"${GH__CR_USERNAME}\" \
-                    -t \"${GH__PAT}\" \
-                    -n \"${WEBAPP__CONTAINER_NAME}\" \
-                    -e \"/etc/testdjereo/_deploy/.env\"'"
+                    --image \"${WEBAPP__CONTAINER_IMAGE}\" \
+                    --ghcr-username \"${GH__CR_USERNAME}\" \
+                    --gh-pat \"${GH__PAT}\" \
+                    --name \"${WEBAPP__CONTAINER_NAME}\" \
+                    --env-file \"/etc/testdjereo/_deploy/.env\"'"
 
   health_test:
     needs:
@@ -161,9 +160,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - shell: bash
-        run: |
-            echo "TODO: check test health!"
-            exit 1
+        run: uv run python -m DO_deploy.check_deployment_health test
 
   plan_live:
     needs:
