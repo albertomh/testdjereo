@@ -3,16 +3,12 @@
 name: PR
 
 on:
-  # TODO: reinstate
-  #push:
-  #  branches-ignore:
-  #    - main
-  #pull_request:
-  #  branches-ignore:
-  #    - main
   push:
-    tags:
-      - 'never'
+    branches-ignore:
+      - main
+  pull_request:
+    branches-ignore:
+      - main
 
 jobs:
   checks:
