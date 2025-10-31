@@ -4,7 +4,18 @@
 # IMPORTANT!
 # The following click-ops steps must be taken to allow this action to succeed:
 #
-# Add the following GitHub Actions secrets via `github.com/albertomh/testdjereo/settings/secrets/actions`.
+# 1. Add the following GitHub Actions repository variables via
+#    `github.com/albertomh/testdjereo/settings/variables/actions`.
+# | variable_name                   | content                                          |
+# | ------------------------------- | ------------------------------------------------ |
+# | TEST__WEBAPP__CONTAINER_IMAGE   | ghcr.io image eg. `albertomh/testdjereo:latest`  |
+# | TEST__WEBAPP__CONTAINER_NAME    | Name for the webapp container eg. `testdjereo`   |
+# |                                 |                                                  |
+# | LIVE__WEBAPP__CONTAINER_IMAGE   | ghcr.io image eg. `albertomh/testdjereo:latest`  |
+# | LIVE__WEBAPP__CONTAINER_NAME    | Name for the webapp container eg. `testdjereo`   |
+
+# 2. Add the following GitHub Actions repository secrets via
+#    `github.com/albertomh/testdjereo/settings/secrets/actions`.
 # | secret_name                     | content                                          |
 # | ------------------------------- | ------------------------------------------------ |
 # | TEST__SSH__PRIVATE_KEY          | private key to use for Droplet admin user        |
@@ -12,20 +23,14 @@
 # | TEST__POSTGRES_USER             | [used to configure DB server]                    |
 # | TEST__POSTGRES_PASSWORD         | [used to configure DB server]                    |
 # | TEST__POSTGRES_DB               | [used to configure DB server]                    |
-# | TEST__APP__ALLOWED_HOSTS        | comma-separated list of IPs                      |
-# | TEST__APP__CSRF_TRUSTED_ORIGINS | FQDNs                                            |
-# | TEST__APP__DATABASE_URL         | eg. `postgresql://user:pwd@1.2.3.4:5432/dbname`  |
-# | TEST__APP__SECRET_KEY           | random string >=50 characters long               |
+# | TEST__DOTENV_FILE               | .env file contents for the test env's webapp     |
 # |                                 |                                                  |
 # | LIVE__SSH__PRIVATE_KEY          | private key to use for Droplet admin user        |
 # | LIVE__SSH__PUBLIC_KEY           | public key to use for Droplet admin user         |
 # | LIVE__POSTGRES_USER             | [used to configure DB server]                    |
 # | LIVE__POSTGRES_PASSWORD         | [used to configure DB server]                    |
 # | LIVE__POSTGRES_DB               | [used to configure DB server]                    |
-# | LIVE__APP__ALLOWED_HOSTS        | comma-separated list of IPs                      |
-# | LIVE__APP__CSRF_TRUSTED_ORIGINS | FQDNs                                            |
-# | LIVE__APP__DATABASE_URL         | eg. `postgresql://user:pwd@1.2.3.4:5432/dbname`  |
-# | LIVE__APP__SECRET_KEY           | random string >=50 characters long               |
+# | LIVE__DOTENV_FILE               | .env file contents for the live env's webapp     |
 # |                                 |                                                  |
 # | GH__CR_USERNAME                 | GitHub username, to log into GH Cont. Registry   |
 # | GH__PAT                         | GitHub PAT with scope `read:packages`            |
@@ -47,17 +52,21 @@ name: on-tag
 
 on:
   push:
-    # run this workflow only if the tag matches the format 'v<semver>'
-    tags:
-      - 'v*.*.*'
+    branches-ignore:
+      - main
+  pull_request:
+    branches-ignore:
+      - main
+  #push:
+  #  # run this workflow only if the tag matches the format 'v<semver>'
+  #  tags:
+  #    - 'v*.*.*'
 
 jobs:
   checks:
     uses: ./.github/workflows/_pre-build-checks.yaml
     with:
       django_checks_deploy: 'true'
-    secrets:
-      DJANGO_SECRET_KEY: ${{ secrets.TEST__APP__SECRET_KEY }}
 
   containerise:
     needs:
@@ -121,18 +130,7 @@ jobs:
             echo "$SSH__PRIVATE_KEY" > ~/.ssh/id_ed25519
             chmod 600 ~/.ssh/id_ed25519
       - name: Create .env file
-        env:
-          APP__ALLOWED_HOSTS: ${{ secrets.TEST__APP__ALLOWED_HOSTS }}
-          APP__CSRF_TRUSTED_ORIGINS: ${{ secrets.TEST__APP__CSRF_TRUSTED_ORIGINS }}
-          APP__DATABASE_URL: ${{ secrets.TEST__APP__DATABASE_URL }}
-          APP__SECRET_KEY: ${{ secrets.TEST__APP__SECRET_KEY }}
-        run: |
-            cat > .env <<EOF
-            SECRET_KEY="${APP__SECRET_KEY}"
-            ALLOWED_HOSTS=${APP__ALLOWED_HOSTS}
-            CSRF_TRUSTED_ORIGINS=${APP__CSRF_TRUSTED_ORIGINS}
-            DATABASE_URL=${APP__DATABASE_URL}
-            EOF
+        run: echo "${{ secrets.TEST__DOTENV_FILE }}" > .env
       - name: Upload blue/green deployment script
         env:
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
@@ -142,8 +140,8 @@ jobs:
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
           GH__CR_USERNAME: ${{ secrets.GH__CR_USERNAME }}
           GH__PAT: ${{ secrets.GH__PAT }}
-          WEBAPP__CONTAINER_IMAGE: ${{ secrets.TEST__WEBAPP__CONTAINER_IMAGE }}
-          WEBAPP__CONTAINER_NAME: ${{ secrets.TEST__WEBAPP__CONTAINER_NAME }}
+          WEBAPP__CONTAINER_IMAGE: ${{ vars.TEST__WEBAPP__CONTAINER_IMAGE }}
+          WEBAPP__CONTAINER_NAME: ${{ vars.TEST__WEBAPP__CONTAINER_NAME }}
         run: |
             uv run python -m DO_deploy.list_droplet_IPs test | \
                 xargs -r -n1 -I{} bash -c \
@@ -248,18 +246,7 @@ jobs:
             echo "$SSH__PRIVATE_KEY" > ~/.ssh/id_ed25519
             chmod 600 ~/.ssh/id_ed25519
       - name: Create .env file
-        env:
-          APP__ALLOWED_HOSTS: ${{ secrets.LIVE__APP__ALLOWED_HOSTS }}
-          APP__CSRF_TRUSTED_ORIGINS: ${{ secrets.LIVE__APP__CSRF_TRUSTED_ORIGINS }}
-          APP__DATABASE_URL: ${{ secrets.LIVE__APP__DATABASE_URL }}
-          APP__SECRET_KEY: ${{ secrets.LIVE__APP__SECRET_KEY }}
-        run: |
-            cat > .env <<EOF
-            SECRET_KEY="${APP__SECRET_KEY}"
-            ALLOWED_HOSTS=${APP__ALLOWED_HOSTS}
-            CSRF_TRUSTED_ORIGINS=${APP__CSRF_TRUSTED_ORIGINS}
-            DATABASE_URL=${APP__DATABASE_URL}
-            EOF
+        run: echo "${{ secrets.LIVE__DOTENV_FILE }}" > .env
       - name: Upload blue/green deployment script
         env:
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
@@ -269,8 +256,8 @@ jobs:
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
           GH__CR_USERNAME: ${{ secrets.GH__CR_USERNAME }}
           GH__PAT: ${{ secrets.GH__PAT }}
-          WEBAPP__CONTAINER_IMAGE: ${{ secrets.LIVE__WEBAPP__CONTAINER_IMAGE }}
-          WEBAPP__CONTAINER_NAME: ${{ secrets.LIVE__WEBAPP__CONTAINER_NAME }}
+          WEBAPP__CONTAINER_IMAGE: ${{ vars.LIVE__WEBAPP__CONTAINER_IMAGE }}
+          WEBAPP__CONTAINER_NAME: ${{ vars.LIVE__WEBAPP__CONTAINER_NAME }}
         run: |
             uv run python -m DO_deploy.list_droplet_IPs live | \
                 xargs -r -n1 -I{} bash -c \

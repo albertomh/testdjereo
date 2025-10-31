@@ -38,6 +38,8 @@ def service_is_healthy(
         try:
             context = ssl._create_unverified_context()
             res = urllib.request.urlopen(url, context=context)
+            if res.status != 200:
+                return False
             res_json = json.loads(res.read())
             return res_json["healthy"]
         except json.JSONDecodeError as e:

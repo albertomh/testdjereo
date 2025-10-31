@@ -81,4 +81,6 @@ ENTRYPOINT []
 # `sh -c` allows variable expansion ($PORT) while allowing for the benefits of 'exec form'
 # (CMD [...]) over 'shell form' (CMD ...). Benefits include preserving signal handling and
 # improved container shutdown behavior.
-CMD ["sh", "-c", "python -m gunicorn --bind 0.0.0.0:${PORT} testdjereo.wsgi:application"]
+CMD ["sh", "-c", "\
+    python -m gunicorn --bind 0.0.0.0:${PORT} testdjereo.wsgi:application\
+"]
