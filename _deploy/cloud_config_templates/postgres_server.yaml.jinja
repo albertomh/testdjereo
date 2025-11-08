@@ -114,6 +114,7 @@ runcmd:
   # drop default postgres cluster (NB. don't use `pg_dropcluster`)
   - rm -rf /etc/postgresql/18/main /var/lib/postgresql/18/main
   - pg_createcluster --start 18 main
+  # TODO: <https://pgtune.leopard.in.ua/?dbVersion=18&osType=linux&dbType=web&cpuNum=1&totalMemory=512&totalMemoryUnit=MB&connectionNum=&hdType=hdd>
   - sed -i "s/^#listen_addresses =.*/listen_addresses = '*'/" /etc/postgresql/18/main/postgresql.conf
   # TODO: can tighten up by replacing `0.0.0.0/0` with `<app_server_ip>/32`
   - echo 'host all all 0.0.0.0/0 scram-sha-256' >> /etc/postgresql/18/main/pg_hba.conf

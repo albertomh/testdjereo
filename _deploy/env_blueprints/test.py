@@ -1,25 +1,28 @@
 from enum import Enum
+from pathlib import Path
 from uuid import UUID
 
-from DO_deploy._DO_types import (
+from digitalocean_deployment_orchestrator.infra.types import (
+    AppServerEnv,
+    Environment,
+    EnvironmentBlueprint,
+)
+from digitalocean_deployment_orchestrator.infra.utils import render_cloud_config
+from digitalocean_deployment_orchestrator.types_DO import (
     DORegion,
     DropletImage,
     DropletRequest,
     DropletSize,
 )
-from DO_deploy.infra._consts import SSH_KEYS
-from DO_deploy.infra._types import (
-    AppServerEnv,
-    Environment,
-    EnvironmentBlueprint,
-)
-from DO_deploy.infra._utils import render_cloud_config
 
 
 class WELL_KNOWN_UUIDS(Enum):
     APP_1 = UUID("f57cebc7-3e29-4096-b1a6-c67d84a88019")
     DB_1 = UUID("6bd8663c-9e5d-4890-982f-cc5bffdd6001")
 
+
+INFRA_DIR = Path(__file__).parents[1]
+CLOUD_CONFIG_DIR = INFRA_DIR / "cloud_config_templates"
 
 BLUEPRINT = EnvironmentBlueprint(
     #
@@ -31,9 +34,11 @@ BLUEPRINT = EnvironmentBlueprint(
             region=DORegion.LONDON1,
             size=DropletSize.BASIC_YOCTO,
             image=DropletImage.DEBIAN_13_X64,
-            ssh_keys=[SSH_KEYS.id_ed25519],
+            ssh_keys=["c1:e9:aa:64:23:92:ae:e3:2b:60:74:f3:cb:73:18:d3"],
             tags=[],
-            user_data=render_cloud_config("app_server", AppServerEnv.from_env()),
+            user_data=render_cloud_config(
+                CLOUD_CONFIG_DIR / "app_server.yaml.jinja", AppServerEnv.from_env()
+            ),
             vpc_uuid="",
             well_known_uuid=WELL_KNOWN_UUIDS.APP_1.value,
         ),

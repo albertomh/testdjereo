@@ -1,16 +1,9 @@
 [project]
 name = "testdjereo-deploy"
 version = "0.0.0"
-description = ""
-authors = [
-    {name = "Alberto Morón Hernández", email = "alberto.moronh@gmail.com"}
-]
 requires-python = ">=3.14"
-dependencies = [
-    "jinja2>=3.1.6",
-    "pydo>=0.17.0,<0.18.0",
-    "structlog>=25.4.0,<26.0.0",
-]
 
-[tool.ruff.lint.per-file-ignores]
-"_deploy/**.py" = ["S603", "S607"]
+dependencies = [
+    #"digitalocean_deployment_orchestrator @ /Users/bertillo/Projects/DODO/dist/digitalocean_deployment_orchestrator-0.1.0-py3-none-any.whl",
+    "digitalocean_deployment_orchestrator @ https://github.com/albertomh/DODO/releases/download/v0.3.0/digitalocean_deployment_orchestrator-0.3.0-py3-none-any.whl",
+]

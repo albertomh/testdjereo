@@ -2,8 +2,7 @@ from enum import Enum
 from uuid import UUID
 
 
-from DO_deploy._DO_types import DORegion, DropletImage, DropletRequest, DropletSize
-from DO_deploy.infra._consts import SSH_KEYS
+from DO_deploy.types_DO import DORegion, DropletImage, DropletRequest, DropletSize
 from DO_deploy.infra._types import (
     AppServerEnv,
     Environment,
@@ -14,6 +13,7 @@ from DO_deploy.infra._utils import render_cloud_config
 class WELL_KNOWN_UUIDS(Enum):
     APP_1 = UUID("...")
 
+CLOUD_CONFIG_DIR = Path("/Users/.../cloud_config_templates")
 
 BLUEPRINT = EnvironmentBlueprint(
     #
@@ -23,7 +23,10 @@ BLUEPRINT = EnvironmentBlueprint(
         DropletRequest(
             name="",
             ...
-            user_data=render_cloud_config("app_server", AppServerEnv.from_env()),
+            user_data=render_cloud_config(
+                CLOUD_CONFIG_DIR / "app_server.yaml.jinja",
+                AppServerEnv.from_env()
+            ),
             ...
         )
     ],
