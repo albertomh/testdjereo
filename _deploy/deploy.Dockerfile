@@ -31,8 +31,8 @@ ENV UV_LINK_MODE=copy \
 WORKDIR /app
 
 # Install build dependencies
-# Only needed while `brotli` wheels for 3.14 aren't available
-# <https://github.com/google/brotli/issues/1351>
+# Only needed while `whitenoise` continues to use `brotli<1.2.0`
+# <https://github.com/evansd/whitenoise/blob/main/uv.lock#L119>
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \

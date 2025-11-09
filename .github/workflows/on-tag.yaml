@@ -52,15 +52,9 @@ name: on-tag
 
 on:
   push:
-    branches-ignore:
-      - main
-  pull_request:
-    branches-ignore:
-      - main
-  #push:
-  #  # run this workflow only if the tag matches the format 'v<semver>'
-  #  tags:
-  #    - 'v*.*.*'
+    # run this workflow only if the tag matches the format 'v<semver>'
+    tags:
+      - 'v*.*.*'
 
 jobs:
   checks:
@@ -104,10 +98,16 @@ jobs:
           POSTGRES_USER: ${{ secrets.TEST__POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.TEST__POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.TEST__POSTGRES_DB }}
-          # needed by `DO_deploy.infra.apply`
+          # needed by `DODO.infra.apply`
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
         working-directory: ./_deploy/
-        run: uv run python -m DO_deploy.infra.apply test --no-dry-run
+        run: |
+            uv sync
+            uv run python \
+              -m digitalocean_deployment_orchestrator.infra.apply \
+                $(pwd)/env_blueprints \
+                test \
+                --no-dry-run
 
   deploy_test:
     needs:
@@ -131,10 +131,6 @@ jobs:
             chmod 600 ~/.ssh/id_ed25519
       - name: Create .env file
         run: echo "${{ secrets.TEST__DOTENV_FILE }}" > .env
-      - name: Upload blue/green deployment script
-        env:
-          DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
-        run: uv run python -m DO_deploy.upload_deployment_script testdjereo test admin
       - name: Run blue/green deployment
         env:
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
@@ -143,15 +139,25 @@ jobs:
           WEBAPP__CONTAINER_IMAGE: ${{ vars.TEST__WEBAPP__CONTAINER_IMAGE }}
           WEBAPP__CONTAINER_NAME: ${{ vars.TEST__WEBAPP__CONTAINER_NAME }}
         run: |
-            uv run python -m DO_deploy.list_droplet_IPs test | \
-                xargs -r -n1 -I{} bash -c \
-                "ssh -t admin@{} 'cd /etc/testdjereo/_deploy/ && \
-                    uv run python -m DO_deploy.deploy.blue_green_deploy \
-                    --image \"${WEBAPP__CONTAINER_IMAGE}\" \
-                    --ghcr-username \"${GH__CR_USERNAME}\" \
-                    --gh-pat \"${GH__PAT}\" \
-                    --name \"${WEBAPP__CONTAINER_NAME}\" \
-                    --env-file \"/etc/testdjereo/_deploy/.env\"'"
+            uv run python -m digitalocean_deployment_orchestrator.list_droplet_IPs test | \
+                xargs -r -n1 -I{} bash -c '
+                IP="{}"
+                echo "Deploying to $IP"
+                ssh -o StrictHostKeyChecking=no admin@"$IP" "
+                    sudo mkdir -p /etc/testdjereo/_deploy/ &&
+                    sudo chown admin:admin /etc/testdjereo/_deploy/
+                " &&
+                scp -o StrictHostKeyChecking=no pyproject.toml .env admin@"$IP":/etc/testdjereo/_deploy/ &&
+                ssh -t admin@"$IP" "
+                    cd /etc/testdjereo/_deploy/ &&
+                    uv run python -m digitalocean_deployment_orchestrator.deploy.blue_green_deploy \
+                    --image '${WEBAPP__CONTAINER_IMAGE}' \
+                    --ghcr-username '${GH__CR_USERNAME}' \
+                    --gh-pat '${GH__PAT}' \
+                    --name '${WEBAPP__CONTAINER_NAME}' \
+                    --env-file '/etc/testdjereo/_deploy/.env'
+                "
+            '
 
   health_test:
     needs:
@@ -169,7 +175,10 @@ jobs:
       - name: Check service health for 'test' env
         env:
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
-        run: uv run python -m DO_deploy.check_service_health test
+        run: |
+            uv sync
+            uv run python \
+              -m digitalocean_deployment_orchestrator.check_service_health test
 
   plan_live:
     needs:
@@ -193,9 +202,14 @@ jobs:
           POSTGRES_USER: ${{ secrets.LIVE__POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.LIVE__POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.LIVE__POSTGRES_DB }}
-          # needed by `DO_deploy.infra.apply`
+          # needed by `DODO.infra.apply`
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
-        run: uv run python -m DO_deploy.infra.apply live
+        run: |
+            uv sync
+            uv run python \
+              -m digitalocean_deployment_orchestrator.infra.apply \
+                $(pwd)/env_blueprints \
+                live
 
   apply_live:
     needs:
@@ -221,9 +235,15 @@ jobs:
           POSTGRES_USER: ${{ secrets.LIVE__POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.LIVE__POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.LIVE__POSTGRES_DB }}
-          # needed by `DO_deploy.infra.apply`
+          # needed by `DODO.infra.apply`
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
-        run: uv run python -m DO_deploy.infra.apply live --no-dry-run
+        run: |
+            uv sync
+            uv run python \
+              -m digitalocean_deployment_orchestrator.infra.apply \
+                $(pwd)/env_blueprints \
+                live \
+                --no-dry-run
 
   deploy_live:
     needs:
@@ -247,10 +267,6 @@ jobs:
             chmod 600 ~/.ssh/id_ed25519
       - name: Create .env file
         run: echo "${{ secrets.LIVE__DOTENV_FILE }}" > .env
-      - name: Upload blue/green deployment script
-        env:
-          DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
-        run: uv run python -m DO_deploy.upload_deployment_script testdjereo live admin
       - name: Run blue/green deployment
         env:
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
@@ -259,15 +275,25 @@ jobs:
           WEBAPP__CONTAINER_IMAGE: ${{ vars.LIVE__WEBAPP__CONTAINER_IMAGE }}
           WEBAPP__CONTAINER_NAME: ${{ vars.LIVE__WEBAPP__CONTAINER_NAME }}
         run: |
-            uv run python -m DO_deploy.list_droplet_IPs live | \
-                xargs -r -n1 -I{} bash -c \
-                "ssh -t admin@{} 'cd /etc/testdjereo/_deploy/ && \
-                    uv run python -m DO_deploy.deploy.blue_green_deploy \
-                    --image \"${WEBAPP__CONTAINER_IMAGE}\" \
-                    --ghcr-username \"${GH__CR_USERNAME}\" \
-                    --gh-pat \"${GH__PAT}\" \
-                    --name \"${WEBAPP__CONTAINER_NAME}\" \
-                    --env-file \"/etc/testdjereo/_deploy/.env\"'"
+            uv run python -m digitalocean_deployment_orchestrator.list_droplet_IPs live | \
+                xargs -r -n1 -I{} bash -c '
+                IP="{}"
+                echo "Deploying to $IP"
+                ssh -o StrictHostKeyChecking=no admin@"$IP" "
+                    sudo mkdir -p /etc/testdjereo/_deploy/ &&
+                    sudo chown admin:admin /etc/testdjereo/_deploy/
+                " &&
+                scp -o StrictHostKeyChecking=no pyproject.toml .env admin@"$IP":/etc/testdjereo/_deploy/ &&
+                ssh -t admin@"$IP" "
+                    cd /etc/testdjereo/_deploy/ &&
+                    uv run python -m digitalocean_deployment_orchestrator.deploy.blue_green_deploy \
+                    --image '${WEBAPP__CONTAINER_IMAGE}' \
+                    --ghcr-username '${GH__CR_USERNAME}' \
+                    --gh-pat '${GH__PAT}' \
+                    --name '${WEBAPP__CONTAINER_NAME}' \
+                    --env-file '/etc/testdjereo/_deploy/.env'
+                "
+            '
 
   health_live:
     needs:
@@ -285,4 +311,7 @@ jobs:
       - name: Check service health for 'live' env
         env:
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
-        run: uv run python -m DO_deploy.check_service_health live
+        run: |
+            uv sync
+            uv run python \
+              -m digitalocean_deployment_orchestrator.check_service_health live
