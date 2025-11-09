@@ -2,10 +2,51 @@
 # Runs when a semver tag is pushed up to GitHub.
 #
 # IMPORTANT!
-# The following click-ops step must be taken to allow this action to propagate a secret
-# key when running the django-checks action in deploy mode:
-# 1. Populate a GitHub Actions secret called `DJANGO_SECRET_KEY` with a random string at
-#    least 50 characters long in `github.com/albertomh/djereo/settings/secrets/actions`.
+# The following click-ops steps must be taken to allow this action to succeed:
+#
+# 1. Add the following GitHub Actions repository variables via
+#    `github.com/albertomh/testdjereo/settings/variables/actions`.
+# | variable_name                   | content                                          |
+# | ------------------------------- | ------------------------------------------------ |
+# | TEST__WEBAPP__CONTAINER_IMAGE   | ghcr.io image eg. `albertomh/testdjereo:latest`  |
+# | TEST__WEBAPP__CONTAINER_NAME    | Name for the webapp container eg. `testdjereo`   |
+# |                                 |                                                  |
+# | LIVE__WEBAPP__CONTAINER_IMAGE   | ghcr.io image eg. `albertomh/testdjereo:latest`  |
+# | LIVE__WEBAPP__CONTAINER_NAME    | Name for the webapp container eg. `testdjereo`   |
+
+# 2. Add the following GitHub Actions repository secrets via
+#    `github.com/albertomh/testdjereo/settings/secrets/actions`.
+# | secret_name                     | content                                          |
+# | ------------------------------- | ------------------------------------------------ |
+# | TEST__SSH__PRIVATE_KEY          | private key to use for Droplet admin user        |
+# | TEST__SSH__PUBLIC_KEY           | public key to use for Droplet admin user         |
+# | TEST__POSTGRES_USER             | [used to configure DB server]                    |
+# | TEST__POSTGRES_PASSWORD         | [used to configure DB server]                    |
+# | TEST__POSTGRES_DB               | [used to configure DB server]                    |
+# | TEST__DOTENV_FILE               | .env file contents for the test env's webapp     |
+# |                                 |                                                  |
+# | LIVE__SSH__PRIVATE_KEY          | private key to use for Droplet admin user        |
+# | LIVE__SSH__PUBLIC_KEY           | public key to use for Droplet admin user         |
+# | LIVE__POSTGRES_USER             | [used to configure DB server]                    |
+# | LIVE__POSTGRES_PASSWORD         | [used to configure DB server]                    |
+# | LIVE__POSTGRES_DB               | [used to configure DB server]                    |
+# | LIVE__DOTENV_FILE               | .env file contents for the live env's webapp     |
+# |                                 |                                                  |
+# | GH__CR_USERNAME                 | GitHub username, to log into GH Cont. Registry   |
+# | GH__PAT                         | GitHub PAT with scope `read:packages`            |
+# | DIGITALOCEAN__TOKEN             | <see instructions below>                         |
+#
+# 1. For the `DIGITALOCEAN__TOKEN`, mint a DO API token with scopes:
+#      - droplet: `create`, `update`, `delete`
+#      - ssh_key: `read`
+#      - tag: `create`
+#   <https://cloud.digitalocean.com/account/api/tokens>
+#
+# Click-ops steps for per-environment clickable jobs to work:
+# 1. Navigate to <https://github.com/albertomh/testdjereo/settings/environments>
+# 2. Create environments 'test' & 'live'.
+#   1. Under 'Deployment branches and tags' set a 'deployment tag rule' with value "v[0-9]*.[0-9]*.[0-9]*"
+#   2. For 'live' only, tick 'Required reviewers' and add yourself.
 
 name: on-tag
 
@@ -20,8 +61,6 @@ jobs:
     uses: ./.github/workflows/_pre-build-checks.yaml
     with:
       django_checks_deploy: 'true'
-    secrets:
-      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
 
   containerise:
     needs:
@@ -29,8 +68,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
-      - run: |
-          echo "REPO_NAME=${GITHUB_REPOSITORY@L}" >> $GITHUB_ENV
+      - run: echo "REPO_NAME=${GITHUB_REPOSITORY@L}" >> $GITHUB_ENV
       - uses: ./.github/actions/containerise
         with:
           dockerfile: _deploy/deploy.Dockerfile
@@ -39,3 +77,241 @@ jobs:
           tags:
             ghcr.io/${{ env.REPO_NAME }}:latest,
             ghcr.io/${{ env.REPO_NAME }}:${{ github.ref_name }},
+
+  apply_test:
+    needs:
+      - containerise
+    runs-on: ubuntu-24.04
+    environment:
+      name: test
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.5"
+      - name: Apply infra blueprint to 'test' environment
+        env:
+          # Environment variables needed by `#cloud-config` YAML specs.
+          # common to both `postgres_server.yaml` & `app_server.yaml`
+          SSH__PUBLIC_KEY: ${{ secrets.TEST__SSH__PUBLIC_KEY }}
+          # unique to `postgres_server.yaml`
+          POSTGRES_USER: ${{ secrets.TEST__POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.TEST__POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.TEST__POSTGRES_DB }}
+          # needed by `DODO.infra.apply`
+          DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
+        working-directory: ./_deploy/
+        run: |
+            uv sync
+            uv run python \
+              -m digitalocean_deployment_orchestrator.infra.apply \
+                $(pwd)/env_blueprints \
+                test \
+                --no-dry-run
+
+  deploy_test:
+    needs:
+      - apply_test
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./_deploy/
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.5"
+      - name: Create SSH private key
+        env:
+          SSH__PRIVATE_KEY: ${{ secrets.TEST__SSH__PRIVATE_KEY }}
+        run: |
+            mkdir -p ~/.ssh
+            echo "$SSH__PRIVATE_KEY" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+      - name: Create .env file
+        run: echo "${{ secrets.TEST__DOTENV_FILE }}" > .env
+      - name: Run blue/green deployment
+        env:
+          DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
+          GH__CR_USERNAME: ${{ secrets.GH__CR_USERNAME }}
+          GH__PAT: ${{ secrets.GH__PAT }}
+          WEBAPP__CONTAINER_IMAGE: ${{ vars.TEST__WEBAPP__CONTAINER_IMAGE }}
+          WEBAPP__CONTAINER_NAME: ${{ vars.TEST__WEBAPP__CONTAINER_NAME }}
+        run: |
+            uv run python -m digitalocean_deployment_orchestrator.list_droplet_IPs test | \
+                xargs -r -n1 -I{} bash -c '
+                IP="{}"
+                echo "Deploying to $IP"
+                ssh -o StrictHostKeyChecking=no admin@"$IP" "
+                    sudo mkdir -p /etc/testdjereo/_deploy/ &&
+                    sudo chown admin:admin /etc/testdjereo/_deploy/
+                " &&
+                scp -o StrictHostKeyChecking=no pyproject.toml .env admin@"$IP":/etc/testdjereo/_deploy/ &&
+                ssh -t admin@"$IP" "
+                    cd /etc/testdjereo/_deploy/ &&
+                    uv run python -m digitalocean_deployment_orchestrator.deploy.blue_green_deploy \
+                    --image '${WEBAPP__CONTAINER_IMAGE}' \
+                    --ghcr-username '${GH__CR_USERNAME}' \
+                    --gh-pat '${GH__PAT}' \
+                    --name '${WEBAPP__CONTAINER_NAME}' \
+                    --env-file '/etc/testdjereo/_deploy/.env'
+                "
+            '
+
+  health_test:
+    needs:
+      - deploy_test
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./_deploy/
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.5"
+      - name: Check service health for 'test' env
+        env:
+          DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
+        run: |
+            uv sync
+            uv run python \
+              -m digitalocean_deployment_orchestrator.check_service_health test
+
+  plan_live:
+    needs:
+      - health_test
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./_deploy/
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.5"
+      - name: Plan infra blueprint changes for 'live' environment
+        env:
+          # Environment variables needed by `#cloud-config` YAML specs.
+          # common to both `postgres_server.yaml` & `app_server.yaml`
+          SSH__PUBLIC_KEY: ${{ secrets.LIVE__SSH__PUBLIC_KEY }}
+          # unique to `postgres_server.yaml`
+          POSTGRES_USER: ${{ secrets.LIVE__POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.LIVE__POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.LIVE__POSTGRES_DB }}
+          # needed by `DODO.infra.apply`
+          DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
+        run: |
+            uv sync
+            uv run python \
+              -m digitalocean_deployment_orchestrator.infra.apply \
+                $(pwd)/env_blueprints \
+                live
+
+  apply_live:
+    needs:
+      - plan_live
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./_deploy/
+    environment:
+      name: live
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.5"
+      - name: Apply infra blueprint to 'live' environment
+        env:
+          # Environment variables needed by `#cloud-config` YAML specs.
+          # common to both `postgres_server.yaml` & `app_server.yaml`
+          SSH__PUBLIC_KEY: ${{ secrets.LIVE__SSH__PUBLIC_KEY }}
+          # unique to `postgres_server.yaml`
+          POSTGRES_USER: ${{ secrets.LIVE__POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.LIVE__POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.LIVE__POSTGRES_DB }}
+          # needed by `DODO.infra.apply`
+          DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
+        run: |
+            uv sync
+            uv run python \
+              -m digitalocean_deployment_orchestrator.infra.apply \
+                $(pwd)/env_blueprints \
+                live \
+                --no-dry-run
+
+  deploy_live:
+    needs:
+      - apply_live
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./_deploy/
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.5"
+      - name: Create SSH private key
+        env:
+          SSH__PRIVATE_KEY: ${{ secrets.LIVE__SSH__PRIVATE_KEY }}
+        run: |
+            mkdir -p ~/.ssh
+            echo "$SSH__PRIVATE_KEY" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+      - name: Create .env file
+        run: echo "${{ secrets.LIVE__DOTENV_FILE }}" > .env
+      - name: Run blue/green deployment
+        env:
+          DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
+          GH__CR_USERNAME: ${{ secrets.GH__CR_USERNAME }}
+          GH__PAT: ${{ secrets.GH__PAT }}
+          WEBAPP__CONTAINER_IMAGE: ${{ vars.LIVE__WEBAPP__CONTAINER_IMAGE }}
+          WEBAPP__CONTAINER_NAME: ${{ vars.LIVE__WEBAPP__CONTAINER_NAME }}
+        run: |
+            uv run python -m digitalocean_deployment_orchestrator.list_droplet_IPs live | \
+                xargs -r -n1 -I{} bash -c '
+                IP="{}"
+                echo "Deploying to $IP"
+                ssh -o StrictHostKeyChecking=no admin@"$IP" "
+                    sudo mkdir -p /etc/testdjereo/_deploy/ &&
+                    sudo chown admin:admin /etc/testdjereo/_deploy/
+                " &&
+                scp -o StrictHostKeyChecking=no pyproject.toml .env admin@"$IP":/etc/testdjereo/_deploy/ &&
+                ssh -t admin@"$IP" "
+                    cd /etc/testdjereo/_deploy/ &&
+                    uv run python -m digitalocean_deployment_orchestrator.deploy.blue_green_deploy \
+                    --image '${WEBAPP__CONTAINER_IMAGE}' \
+                    --ghcr-username '${GH__CR_USERNAME}' \
+                    --gh-pat '${GH__PAT}' \
+                    --name '${WEBAPP__CONTAINER_NAME}' \
+                    --env-file '/etc/testdjereo/_deploy/.env'
+                "
+            '
+
+  health_live:
+    needs:
+      - deploy_live
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./_deploy/
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.5"
+      - name: Check service health for 'live' env
+        env:
+          DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
+        run: |
+            uv sync
+            uv run python \
+              -m digitalocean_deployment_orchestrator.check_service_health live

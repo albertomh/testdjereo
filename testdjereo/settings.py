@@ -203,7 +203,8 @@ EMAIL_PORT = 1025
 # https://docs.djangoproject.com/en/stable/ref/settings/#databases
 
 DATABASES: dict[str, dict[str, Any]] = {
-    "default": {"OPTIONS": {"pool": True}, **env.dj_db_url("DATABASE_URL")}
+    #    "default": {"OPTIONS": {"pool": True}, **env.dj_db_url("DATABASE_URL")}
+    "default": {**env.dj_db_url("DATABASE_URL")}
 }
 
 AUTH_USER_MODEL = "users.AuthUser"
@@ -310,7 +311,7 @@ SILENCED_SYSTEM_CHECKS = [
 # <https://github.com/adamchainz/django-version-checks#usage>
 VERSION_CHECKS = {
     "python": ">=3.14",
-    "postgresql": "~=17.0",
+    "postgresql": "~=18.0",
 }
 
 # <https://github.com/lincolnloop/django-alive>
