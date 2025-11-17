@@ -4,10 +4,12 @@ from uuid import UUID
 
 from digitalocean_deployment_orchestrator.infra.types import (
     AppServerEnv,
+    DropletDNSRecord,
     Environment,
     EnvironmentBlueprint,
 )
 from digitalocean_deployment_orchestrator.infra.utils import render_cloud_config
+from digitalocean_deployment_orchestrator.types_cloudflare import DNSRecord
 from digitalocean_deployment_orchestrator.types_DO import (
     DORegion,
     DropletImage,
@@ -55,5 +57,15 @@ BLUEPRINT = EnvironmentBlueprint(
         #    vpc_uuid="",
         #    well_known_uuid=WELL_KNOWN_UUIDS.DB_1.value,
         # ),
+    ],
+    dns=[
+        DropletDNSRecord(
+            droplet_wkid=WELL_KNOWN_UUIDS.APP_1.value,
+            dns_record=DNSRecord(
+                zone_id="19bd0c440c9b949b599203d8cbef5505",
+                record_name="www.crimecompass.com",
+                proxied=True,
+            ),
+        )
     ],
 )
