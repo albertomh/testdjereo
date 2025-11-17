@@ -57,10 +57,13 @@
 name: on-tag
 
 on:
+  #push:
+  #  # run this workflow only if the tag matches the format 'v<semver>'
+  #  tags:
+  #    - 'v*.*.*'
   push:
-    # run this workflow only if the tag matches the format 'v<semver>'
-    tags:
-      - 'v*.*.*'
+    branches-ignore:
+      - main
 
 jobs:
   checks:
