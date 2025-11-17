@@ -35,12 +35,18 @@
 # | GH__CR_USERNAME                 | GitHub username, to log into GH Cont. Registry   |
 # | GH__PAT                         | GitHub PAT with scope `read:packages`            |
 # | DIGITALOCEAN__TOKEN             | <see instructions below>                         |
+# | CLOUDFLARE__TOKEN               | <see instructions below>                         |
 #
-# 1. For the `DIGITALOCEAN__TOKEN`, mint a DO API token with scopes:
+# 1. For the `DIGITALOCEAN__TOKEN`, mint a Digital Ocean API token with scopes:
 #      - droplet: `create`, `update`, `delete`
 #      - ssh_key: `read`
 #      - tag: `create`
 #   <https://cloud.digitalocean.com/account/api/tokens>
+#
+# 2. For the `CLOUDFLARE__TOKEN`, mint a Cloudflare API token with scopes:
+#      - Zone:Read
+#      - DNS:Edit
+#   <https://dash.cloudflare.com/<accountID>/api-tokens/>
 #
 # Click-ops steps for per-environment clickable jobs to work:
 # 1. Navigate to <https://github.com/albertomh/testdjereo/settings/environments>
