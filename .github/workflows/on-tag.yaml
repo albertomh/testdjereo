@@ -184,6 +184,7 @@ jobs:
         with:
           version: "0.9.5"
       - name: Check service health for 'test' env
+        timeout-minutes: 1
         env:
           CLOUDFLARE__TOKEN: ${{ secrets.CLOUDFLARE__TOKEN }}
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
@@ -324,6 +325,7 @@ jobs:
         with:
           version: "0.9.5"
       - name: Check service health for 'live' env
+        timeout-minutes: 1
         env:
           CLOUDFLARE__TOKEN: ${{ secrets.CLOUDFLARE__TOKEN }}
           DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
