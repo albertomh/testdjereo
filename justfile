@@ -27,7 +27,6 @@ collectstatic:
 
 _dev_setup:
   @test -d .venv/ || uv venv
-  @test -x .venv/bin/django-admin || uv sync --dev
   @uv pip install -e .
   {{call_recipe}} collectstatic
 
