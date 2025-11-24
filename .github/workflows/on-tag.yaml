@@ -57,13 +57,10 @@
 name: on-tag
 
 on:
-  #push:
-  #  # run this workflow only if the tag matches the format 'v<semver>'
-  #  tags:
-  #    - 'v*.*.*'
   push:
-    branches-ignore:
-      - main
+    # run this workflow only if the tag matches the format 'vM.m.p' (semver)
+    tags:
+      - 'v*.*.*'
 
 jobs:
   checks:
@@ -224,112 +221,3 @@ jobs:
               -m digitalocean_deployment_orchestrator.infra.apply \
                 $(pwd)/env_blueprints \
                 live
-
-  apply_live:
-    needs:
-      - plan_live
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./_deploy/
-    environment:
-      name: live
-    steps:
-      - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.9.5"
-      - name: Apply infra blueprint to 'live' environment
-        env:
-          # Environment variables needed by `#cloud-config` YAML specs.
-          # common to both `postgres_server.yaml` & `app_server.yaml`
-          SSH__PUBLIC_KEY: ${{ secrets.LIVE__SSH__PUBLIC_KEY }}
-          # unique to `postgres_server.yaml`
-          POSTGRES_USER: ${{ secrets.LIVE__POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.LIVE__POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.LIVE__POSTGRES_DB }}
-          # needed by `DODO.infra.apply`
-          CLOUDFLARE__TOKEN: ${{ secrets.CLOUDFLARE__TOKEN }}
-          DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
-        run: |
-            uv sync
-            uv run python \
-              -m digitalocean_deployment_orchestrator.infra.apply \
-                $(pwd)/env_blueprints \
-                live \
-                --no-dry-run
-
-  deploy_live:
-    needs:
-      - apply_live
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./_deploy/
-    steps:
-      - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.9.5"
-      - name: Create SSH private key
-        env:
-          SSH__PRIVATE_KEY: ${{ secrets.LIVE__SSH__PRIVATE_KEY }}
-        run: |
-            mkdir -p ~/.ssh
-            echo "$SSH__PRIVATE_KEY" > ~/.ssh/id_ed25519
-            chmod 600 ~/.ssh/id_ed25519
-      - name: Create .env file
-        run: echo "${{ secrets.LIVE__DOTENV_FILE }}" > .env
-      - name: Run blue/green deployment
-        env:
-          CLOUDFLARE__TOKEN: ${{ secrets.CLOUDFLARE__TOKEN }}
-          DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
-          GH__CR_USERNAME: ${{ secrets.GH__CR_USERNAME }}
-          GH__PAT: ${{ secrets.GH__PAT }}
-          WEBAPP__CONTAINER_IMAGE: ${{ vars.LIVE__WEBAPP__CONTAINER_IMAGE }}
-          WEBAPP__CONTAINER_NAME: ${{ vars.LIVE__WEBAPP__CONTAINER_NAME }}
-        run: |
-            uv run python -m digitalocean_deployment_orchestrator.list_droplet_IPs live | \
-                xargs -r -n1 -I{} bash -c '
-                IP="{}"
-                echo "Deploying to $IP"
-                ssh -o StrictHostKeyChecking=no admin@"$IP" "
-                    sudo mkdir -p /etc/testdjereo/_deploy/ &&
-                    sudo chown admin:admin /etc/testdjereo/_deploy/
-                " &&
-                scp -o StrictHostKeyChecking=no pyproject.toml .env admin@"$IP":/etc/testdjereo/_deploy/ &&
-                ssh -t admin@"$IP" "
-                    cd /etc/testdjereo/_deploy/ &&
-                    uv run python -m digitalocean_deployment_orchestrator.deploy.blue_green_deploy \
-                    --image '${WEBAPP__CONTAINER_IMAGE}' \
-                    --ghcr-username '${GH__CR_USERNAME}' \
-                    --gh-pat '${GH__PAT}' \
-                    --name '${WEBAPP__CONTAINER_NAME}' \
-                    --env-file '/etc/testdjereo/_deploy/.env'
-                "
-            '
-
-  health_live:
-    needs:
-      - deploy_live
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./_deploy/
-    steps:
-      - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.9.5"
-      - name: Check service health for 'live' env
-        timeout-minutes: 1
-        env:
-          CLOUDFLARE__TOKEN: ${{ secrets.CLOUDFLARE__TOKEN }}
-          DIGITALOCEAN__TOKEN: ${{ secrets.DIGITALOCEAN__TOKEN }}
-        run: |
-            uv sync
-            uv run python \
-              -m digitalocean_deployment_orchestrator.check_service_health live
