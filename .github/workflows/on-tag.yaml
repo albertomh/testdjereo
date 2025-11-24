@@ -52,7 +52,7 @@ name: on-tag
 
 on:
   push:
-    # run this workflow only if the tag matches the format 'v<semver>'
+    # run this workflow only if the tag matches the format 'vM.m.p' (semver)
     tags:
       - 'v*.*.*'
 

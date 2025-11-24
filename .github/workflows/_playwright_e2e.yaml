@@ -94,7 +94,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-chromium
+          key: playwright-${{ runner.os }}-${{ hashFiles('uv.lock') }}-chromium
 
       - run: uv sync --group=test
 
