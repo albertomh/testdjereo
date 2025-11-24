@@ -324,7 +324,7 @@ dependencies = [
     { name = "structlog" },
 ]
 wheels = [
-    { url = "https://github.com/albertomh/DODO/releases/download/0.4.0%2Bnext/digitalocean_deployment_orchestrator-0.4.0+next-py3-none-any.whl", hash = "sha256:6439164e7b3844829a5672be600cc6e66687609dbbdb6549d8dc16772ea496ba" },
+    { url = "https://github.com/albertomh/DODO/releases/download/0.4.0%2Bnext/digitalocean_deployment_orchestrator-0.4.0+next-py3-none-any.whl", hash = "sha256:4fe4570f9a16c5230010485afb2e4f6b652ae38d759876c60f89ff05e991a017" },
 ]
 
 [package.metadata]

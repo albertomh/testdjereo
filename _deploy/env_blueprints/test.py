@@ -67,7 +67,7 @@ BLUEPRINT = EnvironmentBlueprint(
         DNSRecord(
             cf_zone_name="crimecompass.com",
             type="A",
-            name="crimecompass.com",
+            name="@",
             content=IPAddressForDroplet(droplet_wkid=WELL_KNOWN_UUIDS.APP_1.value),
             proxied=True,
         ),
