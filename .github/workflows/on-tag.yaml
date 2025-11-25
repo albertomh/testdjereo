@@ -73,7 +73,7 @@ jobs:
       - checks
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - run: echo "REPO_NAME=${GITHUB_REPOSITORY@L}" >> $GITHUB_ENV
       - uses: ./.github/actions/containerise
         with:
@@ -91,7 +91,7 @@ jobs:
     environment:
       name: test
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
         with:
           version: "0.9.5"
@@ -125,7 +125,7 @@ jobs:
         shell: bash
         working-directory: ./_deploy/
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
         with:
           version: "0.9.5"
@@ -176,7 +176,7 @@ jobs:
         shell: bash
         working-directory: ./_deploy/
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
         with:
           version: "0.9.5"
@@ -199,7 +199,7 @@ jobs:
         shell: bash
         working-directory: ./_deploy/
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
         with:
           version: "0.9.5"
