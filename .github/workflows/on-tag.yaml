@@ -150,7 +150,7 @@ jobs:
           WEBAPP__CONTAINER_IMAGE: ${{ vars.TEST__WEBAPP__CONTAINER_IMAGE }}
           WEBAPP__CONTAINER_NAME: ${{ vars.TEST__WEBAPP__CONTAINER_NAME }}
         run: |
-            uv run python -m digitalocean_deployment_orchestrator.list_droplet_IPs test | \
+            uv run python -m digitalocean_deployment_orchestrator.list_droplet_IPs test --tag role:web | \
                 xargs -r -n1 -I{} bash -c '
                 IP="{}"
                 echo "Deploying to $IP"
