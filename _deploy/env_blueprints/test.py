@@ -69,19 +69,19 @@ BLUEPRINT = EnvironmentBlueprint(
         # ),
     ],
     dns=[
-        DNSRecord(
-            cf_zone_name="crimecompass.com",
-            type="A",
-            name="@",
-            content=IPAddressForDroplet(droplet_wkid=WELL_KNOWN_UUIDS.APP_1.value),
-            proxied=True,
-        ),
-        DNSRecord(
-            cf_zone_name="crimecompass.com",
-            type="CNAME",
-            name="www",
-            content="crimecompass.com",
-            proxied=True,
-        ),
+    #    DNSRecord(
+    #        cf_zone_name="crimecompass.com",
+    #        type="A",
+    #        name="@",
+    #        content=IPAddressForDroplet(droplet_wkid=WELL_KNOWN_UUIDS.APP_1.value),
+    #        proxied=True,
+    #    ),
+    #    DNSRecord(
+    #        cf_zone_name="crimecompass.com",
+    #        type="CNAME",
+    #        name="www",
+    #        content="crimecompass.com",
+    #        proxied=True,
+    #    ),
     ],
 )
