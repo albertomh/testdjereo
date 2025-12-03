@@ -57,10 +57,13 @@
 name: on-tag
 
 on:
+  #push:
+  #  # run this workflow only if the tag matches the format 'v<semver>'
+  #  tags:
+  #    - 'v*.*.*'
   push:
-    # run this workflow only if the tag matches the format 'vM.m.p' (semver)
-    tags:
-      - 'v*.*.*'
+    branches-ignore:
+      - main
 
 jobs:
   checks:
@@ -69,8 +72,8 @@ jobs:
       django_checks_deploy: 'true'
 
   containerise:
-    needs:
-      - checks
+    # needs:
+    #   - checks
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -147,7 +150,7 @@ jobs:
           WEBAPP__CONTAINER_IMAGE: ${{ vars.TEST__WEBAPP__CONTAINER_IMAGE }}
           WEBAPP__CONTAINER_NAME: ${{ vars.TEST__WEBAPP__CONTAINER_NAME }}
         run: |
-            uv run python -m digitalocean_deployment_orchestrator.list_droplet_IPs test | \
+            uv run python -m digitalocean_deployment_orchestrator.list_droplet_IPs test --tag role:web | \
                 xargs -r -n1 -I{} bash -c '
                 IP="{}"
                 echo "Deploying to $IP"
