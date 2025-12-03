@@ -5,7 +5,7 @@ requires-python = ">=3.14"
 
 dependencies = [
     #"digitalocean_deployment_orchestrator @ ~/Projects/DODO/dist/digitalocean_deployment_orchestrator-0.1.0-py3-none-any.whl",
-    "digitalocean_deployment_orchestrator @ https://github.com/albertomh/DODO/releases/download/v0.4.0/digitalocean_deployment_orchestrator-0.4.0-py3-none-any.whl",
+    "digitalocean_deployment_orchestrator @ https://github.com/albertomh/DODO/releases/download/v0.5.0%2Bnext/digitalocean_deployment_orchestrator-0.5.0+next-py3-none-any.whl",
 ]
 
 [tool.setuptools.packages.find]
