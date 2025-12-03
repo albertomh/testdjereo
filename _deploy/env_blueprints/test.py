@@ -3,6 +3,7 @@ from pathlib import Path
 from uuid import UUID
 
 from digitalocean_deployment_orchestrator.infra.types import (
+    AppServerEnv,
     Environment,
     EnvironmentBlueprint,
     PostgresServerEnv,
@@ -54,34 +55,34 @@ BLUEPRINT = EnvironmentBlueprint(
             vpc_uuid="",
             well_known_uuid=WELL_KNOWN_UUIDS.DB_1.value,
         ),
-        # DropletRequest(
-        #    name="webapp-f57cebc7",
-        #    region=DORegion.LONDON1,
-        #    size=DropletSize.BASIC_YOCTO,
-        #    image=DropletImage.DEBIAN_13_X64,
-        #    ssh_keys=[SSH_KEYS.ID_ED25519.value],
-        #    tags=[TAGS.ROLE_WEB.value],
-        #    user_data=render_cloud_config(
-        #        CLOUD_CONFIG_DIR / "app_server.yaml.jinja", AppServerEnv.from_env()
-        #    ),
-        #    vpc_uuid="",
-        #    well_known_uuid=WELL_KNOWN_UUIDS.APP_1.value,
-        # ),
+        DropletRequest(
+            name="webapp-f57cebc7",
+            region=DORegion.LONDON1,
+            size=DropletSize.BASIC_YOCTO,
+            image=DropletImage.DEBIAN_13_X64,
+            ssh_keys=[SSH_KEYS.ID_ED25519.value],
+            tags=[TAGS.ROLE_WEB.value],
+            user_data=render_cloud_config(
+                CLOUD_CONFIG_DIR / "app_server.yaml.jinja", AppServerEnv.from_env()
+            ),
+            vpc_uuid="",
+            well_known_uuid=WELL_KNOWN_UUIDS.APP_1.value,
+        ),
     ],
     dns=[
-    #    DNSRecord(
-    #        cf_zone_name="crimecompass.com",
-    #        type="A",
-    #        name="@",
-    #        content=IPAddressForDroplet(droplet_wkid=WELL_KNOWN_UUIDS.APP_1.value),
-    #        proxied=True,
-    #    ),
-    #    DNSRecord(
-    #        cf_zone_name="crimecompass.com",
-    #        type="CNAME",
-    #        name="www",
-    #        content="crimecompass.com",
-    #        proxied=True,
-    #    ),
+        DNSRecord(
+            cf_zone_name="crimecompass.com",
+            type="A",
+            name="@",
+            content=IPAddressForDroplet(droplet_wkid=WELL_KNOWN_UUIDS.APP_1.value),
+            proxied=True,
+        ),
+        DNSRecord(
+            cf_zone_name="crimecompass.com",
+            type="CNAME",
+            name="www",
+            content="crimecompass.com",
+            proxied=True,
+        ),
     ],
 )
